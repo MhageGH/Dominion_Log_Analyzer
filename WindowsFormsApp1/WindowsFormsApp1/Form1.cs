@@ -23,9 +23,9 @@ namespace WindowsFormsApp1
 
         private Dictionary<string, int>[] GetOwnCards(string[] log, string[] shortPlayerNames)
         {
-            string[] get_string = new string[] { "を受け取った。", "を購入・獲得した。", "を獲得した。" };    // TODO トラベラー、仮面、手札に獲得、山札に獲得
-            string discard_string = "を廃棄した。";   // TODO 山札から廃棄 (山札から公開⇒通常廃棄？)
-            string back_string = "の山に戻した。";
+            string[] get_string = new string[] { "を受け取った。", "獲得した。" };
+            string[] lost_string = new string[] { "を廃棄した。", "戻した。"};
+            string give_string = "渡した。";                                    // 仮面
             var ownCards = new Dictionary<string, int>[2] { new Dictionary<string, int>(), new Dictionary<string, int>() };
             foreach (var line in log)
             {
@@ -40,23 +40,32 @@ namespace WindowsFormsApp1
                             else ownCards[i].Add(card.name, card.num);
                         }
                     }
-                    if (line.StartsWith(shortPlayerNames[i]) && line.Contains(discard_string))
+                    for (int j = 0; j < lost_string.Length; ++j)
                     {
-                        var card = ExtractObjectCard(line, shortPlayerNames[i]);
-                        if (ownCards[i].ContainsKey(card.name)) ownCards[i][card.name] -= card.num;
-                        else MessageBox.Show("Discard failed!");
+                        if (line.StartsWith(shortPlayerNames[i]) && line.Contains(lost_string[j]))
+                        {
+                            var card = ExtractObjectCard(line, shortPlayerNames[i]);
+                            if (ownCards[i].ContainsKey(card.name)) ownCards[i][card.name] -= card.num;
+                            else MessageBox.Show("lost failed!");
+                        }
                     }
-                    if (line.StartsWith(shortPlayerNames[i]) && line.Contains(back_string))
+                    if (line.StartsWith(shortPlayerNames[i]) && line.Contains(give_string))
                     {
                         var card = ExtractObjectCard(line, shortPlayerNames[i]);
                         if (ownCards[i].ContainsKey(card.name)) ownCards[i][card.name] -= card.num;
-                        else MessageBox.Show("back failed!");
+                        else MessageBox.Show("give failed!");
+                        int opponent = (i + 1) % 2;
+                        if (ownCards[opponent].ContainsKey(card.name)) ownCards[opponent][card.name] += card.num;
+                        else ownCards[opponent].Add(card.name, card.num);
                     }
                 }
             }
             return ownCards;
         }
 
+        // 宝の地図は「金貨4枚を山札の上に獲得した。」だが、工匠は単に「～を獲得した。」であり、山札の上に追加されることは明記されないので注意。
+        // 交易場は単に「銀貨を獲得した。」となり、手札に追加されることは明記されないので注意。
+        //
         // 山札 = 前回のシャフル時のデッキ - シャフル時の手札 - シャフル時の場のカード - シャフル時の脇カード - シャフル時の酒場カード 
         // - シャフル時以降引いたカード - シャフル時以降山札から捨て札にしたカード  - シャフル時以降山札から廃棄したカード
         // + シャフル時以降山札に戻したカード + シャフル時以降山札の上に獲得したカード
