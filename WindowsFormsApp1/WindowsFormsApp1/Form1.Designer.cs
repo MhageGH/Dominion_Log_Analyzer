@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.textBox_log = new System.Windows.Forms.TextBox();
-            this.button1 = new System.Windows.Forms.Button();
+            this.button_analyze = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
             this.label_ownCard0 = new System.Windows.Forms.Label();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
@@ -55,16 +55,16 @@
             this.textBox_log.Size = new System.Drawing.Size(387, 478);
             this.textBox_log.TabIndex = 0;
             // 
-            // button1
+            // button_analyze
             // 
-            this.button1.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.button1.Location = new System.Drawing.Point(94, 514);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(103, 23);
-            this.button1.TabIndex = 1;
-            this.button1.Text = "ログの解析";
-            this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.button1_Click);
+            this.button_analyze.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.button_analyze.Location = new System.Drawing.Point(94, 514);
+            this.button_analyze.Name = "button_analyze";
+            this.button_analyze.Size = new System.Drawing.Size(103, 23);
+            this.button_analyze.TabIndex = 1;
+            this.button_analyze.Text = "ログの解析";
+            this.button_analyze.UseVisualStyleBackColor = true;
+            this.button_analyze.Click += new System.EventHandler(this.button_analyze_Click);
             // 
             // label1
             // 
@@ -192,7 +192,7 @@
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.label1);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.button_analyze);
             this.Controls.Add(this.textBox_log);
             this.Name = "Form1";
             this.Text = "Dominion Log Analyzer";
@@ -208,7 +208,7 @@
         #endregion
 
         private System.Windows.Forms.TextBox textBox_log;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button_analyze;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label_ownCard0;
         private System.Windows.Forms.GroupBox groupBox1;
