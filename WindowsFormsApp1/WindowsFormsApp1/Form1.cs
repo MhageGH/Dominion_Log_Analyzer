@@ -79,42 +79,77 @@ namespace WindowsFormsApp1
             return lastShuffleLineNumber;
         }
 
-        private List<string> GetDrawCards(string[] log, string shortPlayerName)
+        // 自分のカードにのみ対応。他人のドローは非公開のため非対応。
+        private List<string> GetDrawCards(string[] log, string myName)
         {
             string draw_string = "を引いた。";
             var drawCards = new List<string>();
             foreach (var line in log)
             {
-                if (line.StartsWith(shortPlayerName) && line.Contains(draw_string))
+                if (line.StartsWith(myName) && line.Contains(draw_string))
                 {
-                    var cards = ExtractObjectCards(line, shortPlayerName);
+                    var cards = ExtractObjectCards(line, myName);
                     drawCards.AddRange(cards);
                 }
             }
             return drawCards;
         }
 
-        // 山札 = 前回のシャフル時の所持カード - シャフル時の手札 - シャフル時の場のカード - シャフル時の脇カード - シャフル時の酒場カード 
-        // - シャフル時以降引いたカード - シャフル時以降山札から捨て札にしたカード  - シャフル時以降山札から廃棄したカード
-        // + シャフル時以降山札に戻したカード + シャフル時以降山札の上に獲得したカード
+        // 空行の手前の行がクリーンアップ
+        private int GetLastCleanupLineNumber(string[] log, string shortPlayerName)
+        {
+            if (!log.Any(s => s.Contains("ターン 1"))) return 0;   // ターン1より手前
+            int lastCleanupLineNumber = log.ToList().LastIndexOf("") - 1;
+            if (!log[lastCleanupLineNumber].StartsWith(shortPlayerName))    // 自分のクリーンアップでない場合、その前が自分のクリーンアップ
+                lastCleanupLineNumber = log.Take(lastCleanupLineNumber).ToList().LastIndexOf("") - 1;
+            if (!log[lastCleanupLineNumber].StartsWith(shortPlayerName)) throw new Exception("GetLastCleanupLineNumber failed");
+            return lastCleanupLineNumber;
+        }
+
+        // 手札と場の札 = 
+        //  前回のクリーンアップフェイズ時以降 引いたカード (実装済み)
+        //  + 前回のクリーンアップフェイズ時以降 脇や酒場から手札や場に戻したカード (未実装)
+        //  - 前回のクリーンアップフェイズ時以降 手札から捨て札にしたカード  (未実装)
+        //  - 前回のクリーンアップフェイズ時以降 手札から廃棄したカード  (未実装)
+        //  - 前回のクリーンアップフェイズ時以降 脇や酒場に置いたカード (未実装)
+        private List<string> GetHandFieldCards(string[] log, string myName)
+        {
+            int lastCleanupLineNumber = GetLastCleanupLineNumber(log, myName);
+            log = log.Skip(lastCleanupLineNumber).ToArray();    // 前回のクリーンアップフェイズ時以降のログ
+            var handFieldCards = GetDrawCards(log, myName);
+            // TODO
+            return handFieldCards;
+        }
+        
+        // 山札 = 
+        //  前回のシャフル時の所持カード (実装済み)
+        //  - シャフル時の手札と場の札 (仮実装済み)
+        //  - シャフル時の脇カード (未実装)
+        //  - シャフル時の酒場カード (未実装)
+        //  - シャフル時以降 引いたカード (実装済み)
+        //  - シャフル時以降 山札から捨て札にしたカード (未実装)
+        //  - シャフル時以降 山札から廃棄したカード (未実装)
+        //  + シャフル時以降 山札に戻したカード (未実装)
+        //  + シャフル時以降 山札の上に獲得したカード (未実装)
         // 
         // 捨て札に獲得しても、交易場で手札に獲得しても、工匠で山札に獲得しても、「～を獲得した。」であり、獲得先は明記されない。
         // 宝の地図のように「金貨4枚を山札の上に獲得した。」と獲得先が明記されるものもある。
         // 工匠で手札から捨て札にしても、地図職人で山札から見たものを捨て札にしても「～を捨て札にした。」であり、捨てた元は明記されない。
         // これらはアクションの原因となるカードの名前を調べなければカウント出来ない。
         // まずカードの名前を調べる必要がないものを実装する。カードの名前を調べる必要のあるものはあとで追加していく。
-        private List<string> GetMyDecks(string[] log, string[] shortPlayerNames, int firstOrSecond)
+        private List<string> GetMyDecks(string[] log, string[] shortPlayerNames, int myTurnNumber)
         {
-            var shortPlayerName = shortPlayerNames[firstOrSecond];
-            int lastShuffleLineNumber = GetLastShuffleLineNumber(log, shortPlayerName);
-            var logBeforeLastShuffle = new string[lastShuffleLineNumber];
-            for (int i = 0; i < logBeforeLastShuffle.Length; ++i) logBeforeLastShuffle[i] = log[i];
-            var ownCardAtLastShuffle = GetOwnCards(logBeforeLastShuffle, shortPlayerNames)[firstOrSecond];
-            var logAfterLastShuffle = new string[log.Length - lastShuffleLineNumber - 1];
-            for (int i = 0; i < logAfterLastShuffle.Length; ++i) logAfterLastShuffle[i] = log[lastShuffleLineNumber + 1 + i];
-            var drawCards = GetDrawCards(logAfterLastShuffle, shortPlayerName);
+            var myName = shortPlayerNames[myTurnNumber];
+            var lastShuffleLineNumber = GetLastShuffleLineNumber(log, myName);
+            var logBeforeLastShuffle = log.Take(lastShuffleLineNumber).ToArray();
+            var ownCardAtLastShuffle = GetOwnCards(logBeforeLastShuffle, shortPlayerNames)[myTurnNumber];
+            var handFiledCardsAtLastShuffle = GetHandFieldCards(logBeforeLastShuffle, myName);
             var deckCards = new List<string>(ownCardAtLastShuffle);
+            foreach (var card in handFiledCardsAtLastShuffle) deckCards.Remove(card);
+            var logAfterLastShuffle = log.Skip(lastShuffleLineNumber + 1).ToArray();
+            var drawCards = GetDrawCards(logAfterLastShuffle, myName);
             foreach (var drawCard in drawCards) deckCards.Remove(drawCard);
+            // TODO
             return deckCards;
         }
 
@@ -145,7 +180,7 @@ namespace WindowsFormsApp1
         }
 
         // 自分が先手か後手か。先手なら0、後手なら1。
-        private int GetFirstOrSecond(string[] log)
+        private int GetMyTurnNumber(string[] log)
         {
             string draw_string = "を引いた。";
             string card_string = "カード";
@@ -157,20 +192,20 @@ namespace WindowsFormsApp1
                     else return 0;
                 }
             }
-            throw new Exception("GetFirstOrSecond failed");
+            throw new Exception("GetMyTurnNumber failed");
         }
 
         private void button_analyze_Click(object sender, EventArgs e)
         {
             var log = textBox_log.Text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
 
-            int firstOrSecond = GetFirstOrSecond(log);
+            int myTurnNumber = GetMyTurnNumber(log);
             var playerNames = GetPlayerNames(log);
             var shortPlayerNames = GetShortPlayerNames(playerNames);
             var label_names = new Label[2] { label_name0, label_name1 };
             var label_names_deck = new Label[2] { label_name0_deck, label_name1_deck };
-            for (int i = 0; i < 2; ++i) label_names[i].Text = playerNames[i] + ((i == firstOrSecond) ? " (自分)" : "");
-            for (int i = 0; i < 2; ++i) label_names_deck[i].Text = playerNames[i] + ((i == firstOrSecond) ? " (自分)" : "");
+            for (int i = 0; i < 2; ++i) label_names[i].Text = playerNames[i] + ((i == myTurnNumber) ? " (自分)" : "");
+            for (int i = 0; i < 2; ++i) label_names_deck[i].Text = playerNames[i] + ((i == myTurnNumber) ? " (自分)" : "");
 
             var ownCards = GetOwnCards(log, shortPlayerNames);
             var label_ownCards = new Label[2] { label_ownCard0, label_ownCard1 };
@@ -182,12 +217,12 @@ namespace WindowsFormsApp1
                 label_ownCards[i].Text = string.Join(Environment.NewLine, ownCardsQuery);
             }
 
-            var decks = GetMyDecks(log, shortPlayerNames, firstOrSecond);
+            var decks = GetMyDecks(log, shortPlayerNames, myTurnNumber);
             var label_decks = new Label[2] { label_deck0, label_deck1 };
             var decksQuery = decks
                 .GroupBy(s => s)
                 .Select(g => g.Key + " " + g.Count().ToString() + "枚");
-            label_decks[firstOrSecond].Text = string.Join(Environment.NewLine, decksQuery);
+            label_decks[myTurnNumber].Text = string.Join(Environment.NewLine, decksQuery);
         }
     }
 }
