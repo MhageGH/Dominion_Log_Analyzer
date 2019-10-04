@@ -39,17 +39,17 @@ namespace WindowsFormsApp1
             {
                 for (int i = 0; i < 2; ++i)
                 {
-                    for (int j = 0; j < get_strings.Length; ++j)
+                    foreach (var get_string in get_strings)
                     {
-                        if (line.StartsWith(shortPlayerNames[i]) && line.Contains(get_strings[j]))
+                        if (line.StartsWith(shortPlayerNames[i]) && line.Contains(get_string))
                         {
                             var cards = ExtractObjectCards(line, shortPlayerNames[i]);
                             ownCards[i].AddRange(cards);
                         }
                     }
-                    for (int j = 0; j < lost_strings.Length; ++j)
+                    foreach (var lost_string in lost_strings)
                     {
-                        if (line.StartsWith(shortPlayerNames[i]) && line.Contains(lost_strings[j]))
+                        if (line.StartsWith(shortPlayerNames[i]) && line.Contains(lost_string))
                         {
                             var cards = ExtractObjectCards(line, shortPlayerNames[i]);
                             foreach (var card in cards) ownCards[i].Remove(card);
@@ -71,15 +71,11 @@ namespace WindowsFormsApp1
         {
             string shuffle_string = "山札をシャッフルした。";
             int lastShuffleLineNumber = 0;
-            for (int i = 0; i < log.Length; ++i)
-            {
-                var line = log[i];
+            foreach (var (line, i) in log.Select((line, i) => (line, i)))
                 if (line.StartsWith(shortPlayerName) && line.Contains(shuffle_string)) lastShuffleLineNumber = i;
-            }
             return lastShuffleLineNumber;
         }
 
-        // 自分のカードにのみ対応。他人のドローは非公開のため非対応。
         private List<string> GetDrawCards(string[] log, string myName)
         {
             string draw_string = "を引いた。";
@@ -106,17 +102,44 @@ namespace WindowsFormsApp1
             return lastCleanupLineNumber;
         }
 
+        // 手札を捨て札にしたか山札から捨て札にしたかは使用したカードの種類を調べなければ分からない
+        private List<string> GetDiscardFromHand(string[] log, string myName)
+        {
+            // 書庫は手札に引いた後、手札から脇に置く
+            string[] discardActions = { "山賊", "地下貯蔵庫", "書庫", "民兵", "密猟者", "衛兵", "家臣"}; // TODO 手札を捨て札にするカード
+            string use_string = "使用した。";    // 玉座の間による「再使用した。」を含む
+            string discard_string = "を捨て札にした。";
+            var discardFromhand = new List<string>();
+            while (log.Any())
+            {
+                log = log.SkipWhile(l => !discardActions.Any(l.Contains) || !l.Contains(use_string)).ToArray();
+                var effectiveLog = log.TakeWhile(l => l != "" || !l.Contains(use_string)).ToArray();    // 使用したカードの有効範囲ログはターン終了か次のカードを使用するまで
+                foreach (var line in effectiveLog)
+                {
+                    if (line.StartsWith(myName) && line.Contains(discard_string))
+                    {
+                        var cards = ExtractObjectCards(line, myName);
+                        discardFromhand.AddRange(cards);
+                    }
+                }
+                log = log.SkipWhile(l => l != "" || !l.Contains(use_string)).ToArray();
+            }
+            return discardFromhand;
+        }
+
         // 手札と場の札 = 
         //  前回のクリーンアップフェイズ時以降 引いたカード (実装済み)
         //  + 前回のクリーンアップフェイズ時以降 脇や酒場から手札や場に戻したカード (未実装)
-        //  - 前回のクリーンアップフェイズ時以降 手札から捨て札にしたカード  (未実装)
+        //  - 前回のクリーンアップフェイズ時以降 手札から捨て札にしたカード  (仮実装済み)
         //  - 前回のクリーンアップフェイズ時以降 手札から廃棄したカード  (未実装)
-        //  - 前回のクリーンアップフェイズ時以降 脇や酒場に置いたカード (未実装)
+        //  - 前回のクリーンアップフェイズ時以降 脇や酒場に置いたカード (未実装) 
         private List<string> GetHandFieldCards(string[] log, string myName)
         {
             int lastCleanupLineNumber = GetLastCleanupLineNumber(log, myName);
-            log = log.Skip(lastCleanupLineNumber).ToArray();    // 前回のクリーンアップフェイズ時以降のログ
-            var handFieldCards = GetDrawCards(log, myName);
+            var logAfterLastCleanup = log.Skip(lastCleanupLineNumber).ToArray();
+            var handFieldCards = GetDrawCards(logAfterLastCleanup, myName);
+            var discardFromHand = GetDiscardFromHand(logAfterLastCleanup, myName);
+            foreach (var card in discardFromHand) handFieldCards.Remove(card);
             // TODO
             return handFieldCards;
         }
@@ -147,8 +170,8 @@ namespace WindowsFormsApp1
             var deckCards = new List<string>(ownCardAtLastShuffle);
             foreach (var card in handFiledCardsAtLastShuffle) deckCards.Remove(card);
             var logAfterLastShuffle = log.Skip(lastShuffleLineNumber + 1).ToArray();
-            var drawCards = GetDrawCards(logAfterLastShuffle, myName);
-            foreach (var drawCard in drawCards) deckCards.Remove(drawCard);
+            var drawCardsAfterLastShuffle = GetDrawCards(logAfterLastShuffle, myName);
+            foreach (var card in drawCardsAfterLastShuffle) deckCards.Remove(card);
             // TODO
             return deckCards;
         }
@@ -198,7 +221,6 @@ namespace WindowsFormsApp1
         private void button_analyze_Click(object sender, EventArgs e)
         {
             var log = textBox_log.Text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
-
             int myTurnNumber = GetMyTurnNumber(log);
             var playerNames = GetPlayerNames(log);
             var shortPlayerNames = GetShortPlayerNames(playerNames);
@@ -206,6 +228,7 @@ namespace WindowsFormsApp1
             var label_names_deck = new Label[2] { label_name0_deck, label_name1_deck };
             for (int i = 0; i < 2; ++i) label_names[i].Text = playerNames[i] + ((i == myTurnNumber) ? " (自分)" : "");
             for (int i = 0; i < 2; ++i) label_names_deck[i].Text = playerNames[i] + ((i == myTurnNumber) ? " (自分)" : "");
+            while (!shortPlayerNames.Any(s => log.Last().StartsWith(s + "は"))) log = log.Take(log.Count() - 1).ToArray();   // 末尾の主語のない文は削除
 
             var ownCards = GetOwnCards(log, shortPlayerNames);
             var label_ownCards = new Label[2] { label_ownCard0, label_ownCard1 };
@@ -223,6 +246,13 @@ namespace WindowsFormsApp1
                 .GroupBy(s => s)
                 .Select(g => g.Key + " " + g.Count().ToString() + "枚");
             label_decks[myTurnNumber].Text = string.Join(Environment.NewLine, decksQuery);
+
+            // test 手札の表示
+            var handFieldCards = GetHandFieldCards(log, shortPlayerNames[myTurnNumber]);
+            var handFieldCardsQuery = handFieldCards
+                .GroupBy(s => s)
+                .Select(g => g.Key + " " + g.Count().ToString() + "枚");
+            MessageBox.Show(string.Join(Environment.NewLine, handFieldCardsQuery), "手札と場札");
         }
     }
 }
