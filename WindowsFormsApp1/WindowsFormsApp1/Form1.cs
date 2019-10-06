@@ -108,7 +108,7 @@ namespace WindowsFormsApp1
         // 使用したカードを調べる理由：手札を捨て札(or廃棄)にしたか山札から捨て札(or廃棄)にしたかは使用したカードの種類を調べなければ分からない
         private List<string> ExtractObjectCardsByActions(string[] log, string myName, string[] actionCards, string action_string)
         {
-            string use_string = "使用した。";    // 玉座の間による「再使用した。」を含む
+            string use_string = "使用した。";    // 玉座の間による「再使用した。」を含む。使用するのはどちらのプレイヤーでも良い。
             var cards = new List<string>();
             while (log.Any())
             {
@@ -123,9 +123,19 @@ namespace WindowsFormsApp1
         }
 
         private List<string> GetDiscardedCardsFromHand(string[] log, string myName)
-        {            
+        {
             string[] discardActionCards = { // 手札を捨て札にするカード
                 "地下貯蔵庫", "書庫", "民兵", "密猟者", "家臣"    // 基本。書庫のログは手札に引いた後捨てるので手札からの捨て札を適用。
+                // TODO
+            };
+            string discard_string = "を捨て札にした。";
+            return ExtractObjectCardsByActions(log, myName, discardActionCards, discard_string);
+        }
+
+        private List<string> GetDiscardedCardsFromDeck(string[] log, string myName)
+        {
+            string[] discardActionCards = { // 山札を捨て札にするカード
+                "山賊", "衛兵", "家臣",   // 基本 
                 // TODO
             };
             string discard_string = "を捨て札にした。";
@@ -142,56 +152,144 @@ namespace WindowsFormsApp1
             return ExtractObjectCardsByActions(log, myName, trashActionCards, trash_strings);
         }
 
+        private List<string> GetTrashedCardsFromDeck(string[] log, string myName)
+        {
+            string[] trashActionCards = { // 山札を廃棄するカード
+                "山賊", "衛兵", // 基本
+                // TODO
+            };
+            string trash_string = "を廃棄した。";
+            return ExtractObjectCardsByActions(log, myName, trashActionCards, trash_string);
+        }
+
+        private List<string> GetBackedCardsToHandOrField(string[] log, string myName)
+        {
+            string[] backActionCards = { // 手か場に札を戻すカード
+                // "家臣", // 基本。家臣は捨て札にしたものを場に戻して使用する。しかし場に戻したか次のアクションで手札から出したかは判別不可能なのでカウントから除外する。
+                // TODO
+            };
+            string back_string = "戻した。";
+            return ExtractObjectCardsByActions(log, myName, backActionCards, back_string);
+        }
+
+        private List<string> GetPutCardsFromHandToDeck(string[] log, string myName)
+        {
+            string[] putActionCards = { // 手札から山札の上に札を置くカード
+                "職人", "役人", // 基本。
+                // TODO
+            };
+            string put_string = "置いた。";
+            return ExtractObjectCardsByActions(log, myName, putActionCards, put_string);
+        }
+
+        private List<string> GetPutCardsFromDiscardToDeck(string[] log, string myName)
+        {
+            string[] putActionCards = { // 捨て札から山札の上に札を置くカード
+                "前駆者", // 基本。
+                // TODO
+            };
+            string put_string = "置いた。";
+            return ExtractObjectCardsByActions(log, myName, putActionCards, put_string);
+        }
+
+        private List<String> GetGotCardsToHand(string[] log, string myName)
+        {
+            string[] getActionCards = { // 手札に獲得するカード
+                "職人", "鉱山", // 基本。
+                // TODO
+            };
+            string get_string = "獲得した。";
+            return ExtractObjectCardsByActions(log, myName, getActionCards, get_string);
+
+        }
+
+        private List<String> GetGotCardsToDeck(string[] log, string myName)
+        {
+            string[] getActionCards = { // 山札の上に獲得するカード
+                "役人",  // 基本。
+                // TODO
+            };
+            string get_string = "獲得した。";
+            return ExtractObjectCardsByActions(log, myName, getActionCards, get_string);
+
+        }
+
         // 手札と場の札 = 
         //  前回のクリーンアップフェイズ時以降 引いたカード (実装済み)
-        //  + 前回のクリーンアップフェイズ時以降 脇や酒場から手札や場に戻したカード (未実装)
+        //  + 前回のクリーンアップフェイズ時以降 脇や酒場から手札や場に戻したカード (基本のみ実装済み)
+        //  + 前回のクリーンアップフェイズ時以降 相手から受け取ったカード (未実装) 
+        //  + 前回のクリーンアップフェイズ時以降 手札に獲得したカード (基本のみ実装済み) 
         //  - 前回のクリーンアップフェイズ時以降 手札から捨て札にしたカード  (基本のみ実装済み)
         //  - 前回のクリーンアップフェイズ時以降 手札から廃棄したカード (基本のみ実装済み)
-        //  - 前回のクリーンアップフェイズ時以降 手札から山に戻したカード (未実装)
+        //  - 前回のクリーンアップフェイズ時以降 手札から山に置いたカード (基本のみ実装済み)
         //  - 前回のクリーンアップフェイズ時以降 脇や酒場に置いたカード (未実装) 
         //  - 前回のクリーンアップフェイズ時以降 相手に渡したカード (未実装) 
-        //  + 前回のクリーンアップフェイズ時以降 相手から受け取ったカード (未実装) 
-        private List<string> GetHandFieldCards(string[] log, string myName)
+        private List<string> GetHandCardsAndFieldCards(string[] log, string myName)
         {
             int lastCleanupLineNumber = GetLastCleanupLineNumber(log, myName);
             var logAfterLastCleanup = log.Skip(lastCleanupLineNumber).ToArray();
-            var handFieldCards = GetDrawCards(logAfterLastCleanup, myName);
+            var handCardsAndFieldCards = GetDrawCards(logAfterLastCleanup, myName);
+
+            var backedCardsToHandOrField = GetBackedCardsToHandOrField(logAfterLastCleanup, myName);
+            foreach (var card in backedCardsToHandOrField) handCardsAndFieldCards.Add(card);
+
+            var gotCardsToHand = GetGotCardsToHand(logAfterLastCleanup, myName);
+            foreach (var card in gotCardsToHand) handCardsAndFieldCards.Add(card);
+
             var discardedCardsFromHand = GetDiscardedCardsFromHand(logAfterLastCleanup, myName);
-            foreach (var card in discardedCardsFromHand) handFieldCards.Remove(card);
+            foreach (var card in discardedCardsFromHand) handCardsAndFieldCards.Remove(card);
+
             var trashedCardsFromHand = GetTrashedCardsFromHand(logAfterLastCleanup, myName);
-            foreach (var card in trashedCardsFromHand) handFieldCards.Remove(card);
+            foreach (var card in trashedCardsFromHand) handCardsAndFieldCards.Remove(card);
+
+            var putCardsFromHandToDeck = GetPutCardsFromHandToDeck(logAfterLastCleanup, myName);
+            foreach (var card in putCardsFromHandToDeck) handCardsAndFieldCards.Remove(card);
+
             // TODO
-            return handFieldCards;
+            return handCardsAndFieldCards;
         }
-        
+
         // 山札 = 
         //  前回のシャフル時の所持カード (実装済み)
-        //  - シャフル時の手札と場の札 (仮実装済み)
+        //  + シャフル時以降 手札から山札に置いたカード (基本のみ実装済み)
+        //  + シャフル時以降 捨て札から山札に置いたカード (基本のみ実装済み)
+        //  + シャフル時以降 山札の上に獲得したカード (基本のみ実装済み)
+        //  - シャフル時の手札と場の札 (基本のみ実装済み)
         //  - シャフル時の脇カード (未実装)
         //  - シャフル時の酒場カード (未実装)
         //  - シャフル時以降 引いたカード (実装済み)
-        //  - シャフル時以降 山札から捨て札にしたカード (未実装)
-        //  - シャフル時以降 山札から廃棄したカード (未実装)
-        //  + シャフル時以降 山札に戻したカード (未実装)
-        //  + シャフル時以降 山札の上に獲得したカード (未実装)
-        // 
-        // 捨て札に獲得しても、交易場で手札に獲得しても、工匠で山札に獲得しても、「～を獲得した。」であり、獲得先は明記されない。
-        // 宝の地図のように「金貨4枚を山札の上に獲得した。」と獲得先が明記されるものもある。
-        // 工匠で手札から捨て札にしても、地図職人で山札から見たものを捨て札にしても「～を捨て札にした。」であり、捨てた元は明記されない。
-        // これらはアクションの原因となるカードの名前を調べなければカウント出来ない。
-        // まずカードの名前を調べる必要がないものを実装する。カードの名前を調べる必要のあるものはあとで追加していく。
+        //  - シャフル時以降 山札から捨て札にしたカード (基本のみ実装済み)
+        //  - シャフル時以降 山札から廃棄したカード (基本のみ実装済み)
         private List<string> GetMyDecks(string[] log, string[] shortPlayerNames, int myTurnNumber)
         {
             var myName = shortPlayerNames[myTurnNumber];
             var lastShuffleLineNumber = GetLastShuffleLineNumber(log, myName);
             var logBeforeLastShuffle = log.Take(lastShuffleLineNumber).ToArray();
-            var ownCardAtLastShuffle = GetOwnCards(logBeforeLastShuffle, shortPlayerNames)[myTurnNumber];
-            var handFiledCardsAtLastShuffle = GetHandFieldCards(logBeforeLastShuffle, myName);
-            var deckCards = new List<string>(ownCardAtLastShuffle);
-            foreach (var card in handFiledCardsAtLastShuffle) deckCards.Remove(card);
             var logAfterLastShuffle = log.Skip(lastShuffleLineNumber + 1).ToArray();
-            var drawCardsAfterLastShuffle = GetDrawCards(logAfterLastShuffle, myName);
-            foreach (var card in drawCardsAfterLastShuffle) deckCards.Remove(card);
+            var ownCardAtLastShuffle = GetOwnCards(logBeforeLastShuffle, shortPlayerNames)[myTurnNumber];
+            var deckCards = new List<string>(ownCardAtLastShuffle);
+
+            var putCardsFromHandToDeck = GetPutCardsFromHandToDeck(logAfterLastShuffle, myName);
+            foreach (var card in putCardsFromHandToDeck) deckCards.Add(card);
+
+            var putCardsFromDiscardToDeck = GetPutCardsFromDiscardToDeck(logAfterLastShuffle, myName);
+            foreach (var card in putCardsFromDiscardToDeck) deckCards.Add(card);
+
+            var gotCardsToDeck = GetGotCardsToDeck(logAfterLastShuffle, myName);
+            foreach (var card in gotCardsToDeck) deckCards.Add(card);
+
+            var handCardsAndFieldCardsAtLastShuffle = GetHandCardsAndFieldCards(logBeforeLastShuffle, myName);
+            foreach (var card in handCardsAndFieldCardsAtLastShuffle) deckCards.Remove(card);
+
+            var drawCards = GetDrawCards(logAfterLastShuffle, myName);
+            foreach (var card in drawCards) deckCards.Remove(card);
+
+            var discardedCardFromDeck = GetDiscardedCardsFromDeck(logAfterLastShuffle, myName);
+            foreach (var card in discardedCardFromDeck) deckCards.Remove(card);
+
+            var trashedCardFromDeck = GetTrashedCardsFromDeck(logAfterLastShuffle, myName);
+            foreach (var card in trashedCardFromDeck) deckCards.Remove(card);
+
             // TODO
             return deckCards;
         }
@@ -276,11 +374,11 @@ namespace WindowsFormsApp1
             label_decks[myTurnNumber].Text = string.Join(Environment.NewLine, decksQuery);
 
             // test 手札の表示
-            var handFieldCards = GetHandFieldCards(log, shortPlayerNames[myTurnNumber]);
-            var handFieldCardsQuery = handFieldCards
-                .GroupBy(s => s)
-                .Select(g => g.Key + " " + g.Count().ToString() + "枚");
-            MessageBox.Show(string.Join(Environment.NewLine, handFieldCardsQuery), "手札と場札");
+            //var handFieldCards = GetHandCardsAndFieldCards(log, shortPlayerNames[myTurnNumber]);
+            //var handFieldCardsQuery = handFieldCards
+            //    .GroupBy(s => s)
+            //    .Select(g => g.Key + " " + g.Count().ToString() + "枚");
+            //MessageBox.Show(string.Join(Environment.NewLine, handFieldCardsQuery), "手札と場札");
         }
     }
 }
