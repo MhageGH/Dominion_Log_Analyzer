@@ -91,7 +91,9 @@ namespace WindowsFormsApp1
             return drawCards;
         }
 
-        // 空行の手前の行がクリーンアップ
+        // 次が空行の行がクリーンアップ。
+        // ログの最後の行がクリーンアップの場合は判別できない。したがって任意のタイミングのログで利用できるわけではない。
+        // ただしこのメソッドを山札カウントに用いる場合、シャフル直前のログ(logBeforeLastShuffle)を使用するのでこの問題は起こりえない。クリーンナップ直後(ターンの開始)にシャフルをすることはないため。
         private int GetLastCleanupLineNumber(string[] log, string shortPlayerName)
         {
             if (!log.Any(s => s.Contains("ターン 1"))) return 0;   // ターン1より手前
@@ -102,44 +104,62 @@ namespace WindowsFormsApp1
             return lastCleanupLineNumber;
         }
 
-        // 手札を捨て札にしたか山札から捨て札にしたかは使用したカードの種類を調べなければ分からない
-        private List<string> GetDiscardFromHand(string[] log, string myName)
+        // 複数種類のカードのうちのどれかを使用して、あるアクション(捨てる、廃棄するなど)をした時の目的語のカードを抽出する
+        // 使用したカードを調べる理由：手札を捨て札(or廃棄)にしたか山札から捨て札(or廃棄)にしたかは使用したカードの種類を調べなければ分からない
+        private List<string> ExtractObjectCardsByActions(string[] log, string myName, string[] actionCards, string action_string)
         {
-            // 書庫は手札に引いた後、手札から脇に置く
-            string[] discardActions = { "山賊", "地下貯蔵庫", "書庫", "民兵", "密猟者", "衛兵", "家臣"}; // TODO 手札を捨て札にするカード
             string use_string = "使用した。";    // 玉座の間による「再使用した。」を含む
-            string discard_string = "を捨て札にした。";
-            var discardFromhand = new List<string>();
+            var cards = new List<string>();
             while (log.Any())
             {
-                log = log.SkipWhile(l => !discardActions.Any(l.Contains) || !l.Contains(use_string)).ToArray();
+                log = log.SkipWhile(l => !(actionCards.Any(l.Contains) && l.Contains(use_string))).ToArray();
                 var effectiveLog = log.TakeWhile(l => l != "" || !l.Contains(use_string)).ToArray();    // 使用したカードの有効範囲ログはターン終了か次のカードを使用するまで
                 foreach (var line in effectiveLog)
-                {
-                    if (line.StartsWith(myName) && line.Contains(discard_string))
-                    {
-                        var cards = ExtractObjectCards(line, myName);
-                        discardFromhand.AddRange(cards);
-                    }
-                }
+                    if (line.StartsWith(myName) && line.Contains(action_string))
+                        cards.AddRange(ExtractObjectCards(line, myName));
                 log = log.SkipWhile(l => l != "" || !l.Contains(use_string)).ToArray();
             }
-            return discardFromhand;
+            return cards;
+        }
+
+        private List<string> GetDiscardedCardsFromHand(string[] log, string myName)
+        {            
+            string[] discardActionCards = { // 手札を捨て札にするカード
+                "地下貯蔵庫", "書庫", "民兵", "密猟者", "家臣"    // 基本。書庫のログは手札に引いた後捨てるので手札からの捨て札を適用。
+                // TODO
+            };
+            string discard_string = "を捨て札にした。";
+            return ExtractObjectCardsByActions(log, myName, discardActionCards, discard_string);
+        }
+
+        private List<string> GetTrashedCardsFromHand(string[] log, string myName)
+        {
+            string[] trashActionCards = { // 手札を廃棄するカード
+                "礼拝堂", "鉱山", "金貸し", "改築"     // 基本
+                // TODO
+            };
+            string trash_strings = "を廃棄した。";
+            return ExtractObjectCardsByActions(log, myName, trashActionCards, trash_strings);
         }
 
         // 手札と場の札 = 
         //  前回のクリーンアップフェイズ時以降 引いたカード (実装済み)
         //  + 前回のクリーンアップフェイズ時以降 脇や酒場から手札や場に戻したカード (未実装)
-        //  - 前回のクリーンアップフェイズ時以降 手札から捨て札にしたカード  (仮実装済み)
-        //  - 前回のクリーンアップフェイズ時以降 手札から廃棄したカード  (未実装)
+        //  - 前回のクリーンアップフェイズ時以降 手札から捨て札にしたカード  (基本のみ実装済み)
+        //  - 前回のクリーンアップフェイズ時以降 手札から廃棄したカード (基本のみ実装済み)
+        //  - 前回のクリーンアップフェイズ時以降 手札から山に戻したカード (未実装)
         //  - 前回のクリーンアップフェイズ時以降 脇や酒場に置いたカード (未実装) 
+        //  - 前回のクリーンアップフェイズ時以降 相手に渡したカード (未実装) 
+        //  + 前回のクリーンアップフェイズ時以降 相手から受け取ったカード (未実装) 
         private List<string> GetHandFieldCards(string[] log, string myName)
         {
             int lastCleanupLineNumber = GetLastCleanupLineNumber(log, myName);
             var logAfterLastCleanup = log.Skip(lastCleanupLineNumber).ToArray();
             var handFieldCards = GetDrawCards(logAfterLastCleanup, myName);
-            var discardFromHand = GetDiscardFromHand(logAfterLastCleanup, myName);
-            foreach (var card in discardFromHand) handFieldCards.Remove(card);
+            var discardedCardsFromHand = GetDiscardedCardsFromHand(logAfterLastCleanup, myName);
+            foreach (var card in discardedCardsFromHand) handFieldCards.Remove(card);
+            var trashedCardsFromHand = GetTrashedCardsFromHand(logAfterLastCleanup, myName);
+            foreach (var card in trashedCardsFromHand) handFieldCards.Remove(card);
             // TODO
             return handFieldCards;
         }
@@ -218,6 +238,13 @@ namespace WindowsFormsApp1
             throw new Exception("GetMyTurnNumber failed");
         }
 
+        // 末尾の主語のない文を削除する
+        private string[] TrimLog(string[] log, string[] shortPlayerNames)
+        {
+            var n = log.ToList().FindLastIndex(l => shortPlayerNames.Any(s => l.StartsWith(s + "は")));
+            return log.Take(n + 1).ToArray();
+        }
+
         private void button_analyze_Click(object sender, EventArgs e)
         {
             var log = textBox_log.Text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
@@ -228,7 +255,8 @@ namespace WindowsFormsApp1
             var label_names_deck = new Label[2] { label_name0_deck, label_name1_deck };
             for (int i = 0; i < 2; ++i) label_names[i].Text = playerNames[i] + ((i == myTurnNumber) ? " (自分)" : "");
             for (int i = 0; i < 2; ++i) label_names_deck[i].Text = playerNames[i] + ((i == myTurnNumber) ? " (自分)" : "");
-            while (!shortPlayerNames.Any(s => log.Last().StartsWith(s + "は"))) log = log.Take(log.Count() - 1).ToArray();   // 末尾の主語のない文は削除
+            while (!shortPlayerNames.Any(s => log.Last().StartsWith(s + "は"))) log = log.Take(log.Count() - 1).ToArray();
+            log = TrimLog(log, shortPlayerNames);
 
             var ownCards = GetOwnCards(log, shortPlayerNames);
             var label_ownCards = new Label[2] { label_ownCard0, label_ownCard1 };
