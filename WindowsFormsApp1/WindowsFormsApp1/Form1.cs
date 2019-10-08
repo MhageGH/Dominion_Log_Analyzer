@@ -357,63 +357,62 @@ namespace WindowsFormsApp1
         //  - 前回のクリーンアップフェイズ時以降 手札から捨て札にしたカード
         //  - 前回のクリーンアップフェイズ時以降 手札から廃棄したカード
         //  - 前回のクリーンアップフェイズ時以降 手札から山に置いたカード
-        //  - 前回のクリーンアップフェイズ時以降 酒場に置いたカード (未実装) 
-        //  - 前回のクリーンアップフェイズ時以降 脇に置いた1ターン持続カードとそのオプション (未実装) 
-        //  - 前回のクリーンアップフェイズ時以降 脇に置いた複数ターン持続カードとそのオプション (未実装)
-        //  - 前回のクリーンアップフェイズ時以降 脇に置いた原住民の村とそのオプション (未実装)
-        //  - 前回のクリーンアップフェイズ時以降 相手に渡したカード (未実装) 
-        //  - 前回のクリーンアップフェイズ時以降 手札からサプライの山に戻したカード (未実装) 
+        //  - 前回のクリーンアップフェイズ時以降 酒場に置いたカード
+        //  - 前回のクリーンアップフェイズ時以降 脇に置いた1ターン持続カードとそのオプション
+        //  - 前回のクリーンアップフェイズ時以降 脇に置いた複数ターン持続カードとそのオプション
+        //  - 前回のクリーンアップフェイズ時以降 脇に置いた原住民の村とそのオプション
+        //  - 前回のクリーンアップフェイズ時以降 相手に渡したカード
+        //  - 前回のクリーンアップフェイズ時以降 手札からサプライの山に戻したカード
         private List<string> GetHandCardsAndFieldCards(string[] log, string myName)
         {
             int lastCleanupLineNumber = GetLastCleanupLineNumber(log, myName);
             var logAfterLastCleanup = log.Skip(lastCleanupLineNumber).ToArray();
             var handCardsAndFieldCards = GetDrawCards(logAfterLastCleanup, myName);
 
-            var calledCardsToHandOrField = GetCalledCard(logAfterLastCleanup, myName);
-            foreach (var card in calledCardsToHandOrField) handCardsAndFieldCards.Add(card);
+            var cards = GetCalledCard(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Add(card);
 
-            var returnedOneTurnDurationCards = GetReturnedOneTurnDurationCards(logAfterLastCleanup, myName);
-            foreach (var card in returnedOneTurnDurationCards) handCardsAndFieldCards.Add(card);
+            cards = GetReturnedOneTurnDurationCards(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Add(card);
 
-            var returnedMultipleTurnsDurationCards = GetReturnedMultipleTurnsDurationCards(logAfterLastCleanup, myName);
-            foreach (var card in returnedMultipleTurnsDurationCards) handCardsAndFieldCards.Add(card);
+            cards = GetReturnedMultipleTurnsDurationCards(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Add(card);
 
-            var returnedNativeVillage = GetReturnedNativeVillage(logAfterLastCleanup, myName);
-            foreach (var card in returnedNativeVillage) handCardsAndFieldCards.Add(card);
+            cards = GetReturnedNativeVillage(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Add(card);
 
-            var receivedCards = GetReceivedCards(logAfterLastCleanup, myName);
-            foreach (var card in receivedCards) handCardsAndFieldCards.Add(card);
+            cards = GetReceivedCards(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Add(card);
 
-            var gotCardsToHand = GetGotCardsToHand(logAfterLastCleanup, myName);
-            foreach (var card in gotCardsToHand) handCardsAndFieldCards.Add(card);
+            cards = GetGotCardsToHand(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Add(card);
 
-            var discardedCardsFromHand = GetDiscardedCardsFromHand(logAfterLastCleanup, myName);
-            foreach (var card in discardedCardsFromHand) handCardsAndFieldCards.Remove(card);
+            cards = GetDiscardedCardsFromHand(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Remove(card);
 
-            var trashedCardsFromHand = GetTrashedCardsFromHand(logAfterLastCleanup, myName);
-            foreach (var card in trashedCardsFromHand) handCardsAndFieldCards.Remove(card);
+            cards = GetTrashedCardsFromHand(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Remove(card);
 
-            var putCardOnDeckFromHand = GetPutCardsOnDeckFromHand(logAfterLastCleanup, myName);
-            foreach (var card in putCardOnDeckFromHand) handCardsAndFieldCards.Remove(card);
+            cards = GetPutCardsOnDeckFromHand(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Remove(card);
 
-            var putCardOnBar = GetPutCardOnBar(logAfterLastCleanup, myName);
-            foreach (var card in putCardOnBar) handCardsAndFieldCards.Remove(card);
+            cards = GetPutCardOnBar(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Remove(card);
 
-            var putOneTurnDurationCards = GetPutOneTurnDurationCards(logAfterLastCleanup, myName);
-            foreach (var card in putOneTurnDurationCards) handCardsAndFieldCards.Remove(card);
+            cards = GetPutOneTurnDurationCards(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Remove(card);
 
-            var putMultipleTurnsDurationCards = GetPutMultipleTurnsDurationCards(logAfterLastCleanup, myName);
-            foreach (var card in putMultipleTurnsDurationCards) handCardsAndFieldCards.Remove(card);
+            cards = GetPutMultipleTurnsDurationCards(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Remove(card);
 
-            var putNativeVillage = GetPutNativeVillage(logAfterLastCleanup, myName);
-            foreach (var card in putNativeVillage) handCardsAndFieldCards.Remove(card);
+            cards = GetPutNativeVillage(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Remove(card);
 
-            var givenCards = GetGivenCards(logAfterLastCleanup, myName);
-            foreach (var card in givenCards) handCardsAndFieldCards.Remove(card);
+            cards = GetGivenCards(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Remove(card);
 
-            var returnedCardsOnSupplyDeckFromHand = GetReturnedCardsOnSupplyDeckFromHand(logAfterLastCleanup, myName);
-            foreach (var card in returnedCardsOnSupplyDeckFromHand) handCardsAndFieldCards.Remove(card);
-
+            cards = GetReturnedCardsOnSupplyDeckFromHand(logAfterLastCleanup, myName);
+            foreach (var card in cards) handCardsAndFieldCards.Remove(card);
 
             return handCardsAndFieldCards;
         }
@@ -438,32 +437,32 @@ namespace WindowsFormsApp1
             var ownCardAtLastShuffle = GetOwnCards(logBeforeLastShuffle, shortPlayerNames)[myTurnNumber];
             var deckCards = new List<string>(ownCardAtLastShuffle);
 
-            var handCardsAndFieldCardsAtLastShuffle = GetHandCardsAndFieldCards(logBeforeLastShuffle, myName);
-            foreach (var card in handCardsAndFieldCardsAtLastShuffle) deckCards.Remove(card);
+            var cards = GetHandCardsAndFieldCards(logBeforeLastShuffle, myName);
+            foreach (var card in cards) deckCards.Remove(card);
 
-            var asideCards = GetAsideCards(logBeforeLastShuffle, myName);
-            foreach (var card in asideCards) deckCards.Remove(card);
+            cards = GetAsideCards(logBeforeLastShuffle, myName);
+            foreach (var card in cards) deckCards.Remove(card);
 
-            var cardsOnBar = GetCardsOnBar(logBeforeLastShuffle, myName);
-            foreach (var card in cardsOnBar) deckCards.Remove(card);
+            cards = GetCardsOnBar(logBeforeLastShuffle, myName);
+            foreach (var card in cards) deckCards.Remove(card);
 
-            var putCardsFromHandToDeck = GetPutCardsOnDeckFromHand(logAfterLastShuffle, myName);
-            foreach (var card in putCardsFromHandToDeck) deckCards.Add(card);
+            cards = GetPutCardsOnDeckFromHand(logAfterLastShuffle, myName);
+            foreach (var card in cards) deckCards.Add(card);
 
-            var putCardsOnDeckFromDiscard = GetPutCardsOnDeckFromDiscard(logAfterLastShuffle, myName);
-            foreach (var card in putCardsOnDeckFromDiscard) deckCards.Add(card);
+            cards = GetPutCardsOnDeckFromDiscard(logAfterLastShuffle, myName);
+            foreach (var card in cards) deckCards.Add(card);
 
-            var gotCardsToDeck = GetGotCardsToDeck(logAfterLastShuffle, myName);
-            foreach (var card in gotCardsToDeck) deckCards.Add(card);
+            cards = GetGotCardsToDeck(logAfterLastShuffle, myName);
+            foreach (var card in cards) deckCards.Add(card);
 
-            var drawCards = GetDrawCards(logAfterLastShuffle, myName);
-            foreach (var card in drawCards) deckCards.Remove(card);
+            cards = GetDrawCards(logAfterLastShuffle, myName);
+            foreach (var card in cards) deckCards.Remove(card);
 
-            var discardedCardFromDeck = GetDiscardedCardsFromDeck(logAfterLastShuffle, myName);
-            foreach (var card in discardedCardFromDeck) deckCards.Remove(card);
+            cards = GetDiscardedCardsFromDeck(logAfterLastShuffle, myName);
+            foreach (var card in cards) deckCards.Remove(card);
 
-            var trashedCardFromDeck = GetTrashedCardsFromDeck(logAfterLastShuffle, myName);
-            foreach (var card in trashedCardFromDeck) deckCards.Remove(card);
+            cards = GetTrashedCardsFromDeck(logAfterLastShuffle, myName);
+            foreach (var card in cards) deckCards.Remove(card);
 
             return deckCards;
         }
