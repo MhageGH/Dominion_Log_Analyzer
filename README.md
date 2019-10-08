@@ -2,6 +2,12 @@
 ドミニオンオンラインのログの解析ツールです。対応は日本語のみです。
 ![property](doc/screenshot.png)<br>
 
+## 開発環境
+Visual Studio 2017
+
+## 実行ファイル
+Dominion_Log_Analyzer.exe
+
 ## 使い方
 1. ログをコピ&ペーストします。
 2. ログの解析ボタンを押します。
