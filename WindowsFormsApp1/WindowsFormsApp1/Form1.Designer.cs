@@ -37,9 +37,7 @@
             this.label_name0 = new System.Windows.Forms.Label();
             this.label_ownCard1 = new System.Windows.Forms.Label();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.label_deck1 = new System.Windows.Forms.Label();
             this.label_deck0 = new System.Windows.Forms.Label();
-            this.label_name1_deck = new System.Windows.Forms.Label();
             this.label_name0_deck = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
@@ -132,27 +130,15 @@
             // 
             // groupBox2
             // 
-            this.groupBox2.Controls.Add(this.label_deck1);
             this.groupBox2.Controls.Add(this.label_deck0);
-            this.groupBox2.Controls.Add(this.label_name1_deck);
             this.groupBox2.Controls.Add(this.label_name0_deck);
             this.groupBox2.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
             this.groupBox2.Location = new System.Drawing.Point(677, 12);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(266, 496);
+            this.groupBox2.Size = new System.Drawing.Size(145, 496);
             this.groupBox2.TabIndex = 5;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "山札";
-            // 
-            // label_deck1
-            // 
-            this.label_deck1.AutoSize = true;
-            this.label_deck1.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.label_deck1.Location = new System.Drawing.Point(127, 39);
-            this.label_deck1.Name = "label_deck1";
-            this.label_deck1.Size = new System.Drawing.Size(13, 18);
-            this.label_deck1.TabIndex = 7;
-            this.label_deck1.Text = "-";
             // 
             // label_deck0
             // 
@@ -163,16 +149,6 @@
             this.label_deck0.Size = new System.Drawing.Size(13, 18);
             this.label_deck0.TabIndex = 6;
             this.label_deck0.Text = "-";
-            // 
-            // label_name1_deck
-            // 
-            this.label_name1_deck.AutoSize = true;
-            this.label_name1_deck.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.label_name1_deck.Location = new System.Drawing.Point(127, 21);
-            this.label_name1_deck.Name = "label_name1_deck";
-            this.label_name1_deck.Size = new System.Drawing.Size(13, 18);
-            this.label_name1_deck.TabIndex = 5;
-            this.label_name1_deck.Text = "-";
             // 
             // label_name0_deck
             // 
@@ -188,7 +164,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(957, 552);
+            this.ClientSize = new System.Drawing.Size(840, 552);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.label1);
@@ -214,11 +190,9 @@
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.Label label_ownCard1;
         private System.Windows.Forms.GroupBox groupBox2;
-        private System.Windows.Forms.Label label_name1_deck;
         private System.Windows.Forms.Label label_name0_deck;
         private System.Windows.Forms.Label label_name1;
         private System.Windows.Forms.Label label_name0;
-        private System.Windows.Forms.Label label_deck1;
         private System.Windows.Forms.Label label_deck0;
     }
 }
