@@ -37,6 +37,9 @@ namespace WindowsFormsApp1
                 .GroupBy(s => s)
                 .Select(g => g.Key + " " + g.Count().ToString() + "枚");
             label_deck0.Text = string.Join(Environment.NewLine, decksQuery);
+
+            var tester = new Tester(analyzer);
+            tester.Run(textBox_log.Text);
         }
     }
 }
