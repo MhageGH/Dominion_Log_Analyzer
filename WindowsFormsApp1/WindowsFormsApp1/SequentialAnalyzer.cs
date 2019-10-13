@@ -8,62 +8,107 @@ namespace WindowsFormsApp1
 {
     class Extractor
     {
-        // ログ1行から目的語の複数の種類のカードの名前と枚数を抽出してリスト化する
-        static public List<string> ExtractObjectCards(string line, string shortPlayerName)
-        {                                                                             // 例：文字列 "Tは銅貨3枚、屋敷2枚を引いた。"
-            var l = line.Substring((shortPlayerName + "は").Length);                  // 例：文字列 "銅貨3枚、屋敷2枚を引いた。"
-            l = l.Remove(l.IndexOf("を"));                                            // 例：文字列 "銅貨3枚、屋敷2枚"
-            var ss = l.Split(new string[] { "、" }, StringSplitOptions.None);         // 例：文字列配列 {"銅貨3枚", "屋敷2枚"}
+        // ログ1行から主語と動詞と目的語を抽出する
+        static public (string name, string action, List<string> cards, string destination) Extract(string line)
+        {                                                                       // 例："Tは銅貨3枚、屋敷2枚を引いた。"
+            var l = line;
+            int idx = l.IndexOf("は");
+            if (idx == -1) return (null, null, null, null);
+            var name = l.Substring(0, idx);
+            l = l.Substring(idx + 1);                                     // 例："銅貨3枚、屋敷2枚を引いた。"
+
+            idx = l.IndexOf("を");
+            if (idx == -1) return (name, null, null, null);
+            var obj = l.Remove(idx);                                           // 例："銅貨3枚、屋敷2枚"
+            var ss = obj.Split(new string[] { "、" }, StringSplitOptions.None);   // 例：{"銅貨3枚", "屋敷2枚"}
             var cards = new List<string>();
             foreach (var s in ss)
             {
                 var n = System.Text.RegularExpressions.Regex.Replace(s, @"[^0-9]", "");         // 数字を抽出
-                if (n == "") cards.Add(s);                                                      // 枚数がない->1枚
+                if (n == "" || !s.Contains("枚")) cards.Add(s);                                 // 〇枚がない -> 1枚 or 枚数ではない
                 else for (int i = 0; i < int.Parse(n); ++i) cards.Add(s.Remove(s.IndexOf(n)));  // 例： リスト {"銅貨", "銅貨", "銅貨"}
             }
-            return cards;                                                                       // 例： リスト {"銅貨", "銅貨", "銅貨", "屋敷", "屋敷"}
+            l = l.Substring(idx + 1);                                     // 例："引いた。"
+
+            string destination;
+            if (l == "捨て札にした。") destination = null;           // "捨て札にした。"はまとめて一つの動詞とする
+            else
+            {
+                idx = l.IndexOf("に");                               // 例："酒場マットに置いた。"
+                if (idx != -1)
+                {
+                    destination = l.Remove(idx);                     // 例："酒場マット"
+                    l = l.Substring(idx + 1);                        // 例："置いた。"
+                }
+                else destination = null;
+            }
+
+            var action = l;
+            return (name, action, cards, destination);
         }
     }
 
     class SequentialAnalyzer
     {
         // 所持カードを取得する
-        private List<string>[] GetOwnCards(string[] log, string[] shortPlayerNames)
+        private List<string>[] GetOwnCards(string[] lines, string[] shortPlayerNames)
         {
-            string[] get_strings = new string[] { "を受け取った。", "獲得した。" };
-            string[] lost_strings = new string[] { "を廃棄した。", "戻した。" };
+            string[] get_strings = new string[] { "受け取った。", "獲得した。", "購入・獲得した。" };
+            string[] lost_strings = new string[] { "廃棄した。", "戻した。" };
             string give_string = "渡した。";                                    // 仮面舞踏会
             var ownCards = new List<string>[2] { new List<string>(), new List<string>() };
-            foreach (var line in log)
+            foreach (var line in lines)
             {
+                var (name, action, cards, destination) = Extractor.Extract(line);
                 for (int i = 0; i < 2; ++i)
                 {
-                    foreach (var get_string in get_strings)
+                    if (name == shortPlayerNames[i])
                     {
-                        if (line.StartsWith(shortPlayerNames[i]) && line.Contains(get_string))
+                        if (get_strings.Any(s => s == action)) ownCards[i].AddRange(cards);
+                        if (lost_strings.Any(s => s == action)) foreach (var card in cards) ownCards[i].Remove(card);
+                        if (give_string == action)
                         {
-                            var cards = Extractor.ExtractObjectCards(line, shortPlayerNames[i]);
-                            ownCards[i].AddRange(cards);
-                        }
-                    }
-                    foreach (var lost_string in lost_strings)
-                    {
-                        if (line.StartsWith(shortPlayerNames[i]) && line.Contains(lost_string))
-                        {
-                            var cards = Extractor.ExtractObjectCards(line, shortPlayerNames[i]);
                             foreach (var card in cards) ownCards[i].Remove(card);
+                            int opponent = (i + 1) % 2;
+                            ownCards[opponent].AddRange(cards);
                         }
-                    }
-                    if (line.StartsWith(shortPlayerNames[i]) && line.Contains(give_string))
-                    {
-                        var cards = Extractor.ExtractObjectCards(line, shortPlayerNames[i]);
-                        foreach (var card in cards) ownCards[i].Remove(card);
-                        int opponent = (i + 1) % 2;
-                        ownCards[opponent].AddRange(cards);
                     }
                 }
             }
             return ownCards;
+        }
+
+        private string[] InsertCleanup(string[] lines)
+        {
+            var idxs = new List<int>();
+            int n = lines.ToList().FindIndex(l => l.Contains("ターン 1"));
+            for (int i = n; i < lines.Length - 1; ++i)
+            {
+                if (lines[i].Contains("引いた。") && lines[i + 1] == "")
+                {
+                    if (lines[i - 1].Contains("シャッフルした。")) idxs.Add(i - 1);
+                    else idxs.Add(i);
+                }
+            }
+            var lines_list = lines.ToList();
+            for (int i = 0; i < idxs.Count; ++i)
+            {
+                var name = Extractor.Extract(lines_list[idxs[i] + i]).name;
+                lines_list.Insert(idxs[i] + i, name + "はカードをクリーンアップした。");
+            }
+            return lines_list.ToArray();
+        }
+
+        private void SaveHistory(string[] lines)
+        {
+            var extractedLog = new StringBuilder();
+            foreach (var line in lines)
+            {
+                var (name, action, cards, destination) = Extractor.Extract(line);
+                if (name != null) extractedLog.Append("name = " + name + "\taction = " + action + "\tcards = " + string.Join(",", cards) + "\tdestination = " + destination + Environment.NewLine);
+            }
+            using (var sw = new System.IO.StreamWriter("extracted_log.txt")) sw.Write(extractedLog);
+            using (var sw = new System.IO.StreamWriter("log.txt")) sw.Write(string.Join(Environment.NewLine, lines));
         }
 
         /// <summary>所持カード</summary>
@@ -72,11 +117,33 @@ namespace WindowsFormsApp1
         /// <summary>自分の山札</summary>
         public List<string> myDeck;
 
-        public void Run(string[] log, string[] shortPlayerNames, int myTurnNumber)
+        /// <summary>解析開始</summary>
+        /// <param name="lines">解析する行の配列</param>
+        /// <param name="shortPlayerNames">プレイヤ短縮名の配列(手番順)</param>
+        /// <param name="myTurnNumber">自分の手番</param>
+        public void Run(string[] lines, string[] shortPlayerNames, int myTurnNumber)
         {
-            ownCards = GetOwnCards(log, shortPlayerNames);
-            // TODO
-            myDeck = new List<string>();
+            lines = InsertCleanup(lines);
+
+            // test
+            SaveHistory(lines);
+
+            // temp
+            ownCards = GetOwnCards(lines, shortPlayerNames);
+
+            var analyzer = new LineAnalyzer();
+            for (int i = 0; i < lines.Length; ++i)
+            {
+                try
+                {
+                    analyzer.Run(lines[i], shortPlayerNames, myTurnNumber);
+                }
+                catch (Exception e)
+                {
+                    System.Windows.Forms.MessageBox.Show(e.Message);
+                }
+            }
+            myDeck = analyzer.myDeck;
         }
     }
 }
