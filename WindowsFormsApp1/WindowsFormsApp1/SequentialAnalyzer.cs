@@ -100,7 +100,7 @@ namespace WindowsFormsApp1
             return lines_list.ToArray();
         }
 
-        private void SaveHistory(string[] lines)
+        private void SaveLog(string[] lines)
         {
             var extractedLog = new StringBuilder();
             foreach (var line in lines)
@@ -109,7 +109,7 @@ namespace WindowsFormsApp1
                 if (name != null) extractedLog.Append("name = " + name + "\taction = " + action + "\tcards = " + string.Join(",", cards) + "\tdestination = " + destination + Environment.NewLine);
             }
             using (var sw = new System.IO.StreamWriter("extracted_log.txt")) sw.Write(extractedLog);
-            using (var sw = new System.IO.StreamWriter("log.txt")) sw.Write(string.Join(Environment.NewLine, lines));
+            using (var sw = new System.IO.StreamWriter("game_log.txt")) sw.Write(string.Join(Environment.NewLine, lines));
         }
 
         /// <summary>所持カード</summary>
@@ -122,12 +122,11 @@ namespace WindowsFormsApp1
         /// <param name="lines">解析する行の配列</param>
         /// <param name="shortPlayerNames">プレイヤ短縮名の配列(手番順)</param>
         /// <param name="myTurnNumber">自分の手番</param>
-        public void Run(string[] lines, string[] shortPlayerNames, int myTurnNumber)
+        /// <return>成否</return>
+        public bool Run(string[] lines, string[] shortPlayerNames, int myTurnNumber)
         {
             lines = InsertCleanup(lines);
-
-            // test
-            SaveHistory(lines);
+            SaveLog(lines);
 
             // temp
             ownCards = GetOwnCards(lines, shortPlayerNames);
@@ -147,6 +146,7 @@ namespace WindowsFormsApp1
             }
             myDeck = analyzer.myDeck;
             using (var sw = new System.IO.StreamWriter("error_log.txt")) sw.Write(errorLog);
+            return errorLog.Length == 0 ? true : false;
         }
     }
 }

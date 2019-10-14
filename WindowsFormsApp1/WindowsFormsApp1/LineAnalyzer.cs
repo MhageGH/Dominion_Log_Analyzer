@@ -4,8 +4,6 @@ using System.Linq;
 
 namespace WindowsFormsApp1
 {
-    // 家臣は山札から捨て札にしたものを場に戻して使用する。しかし場に戻したか次のアクションで手札から出したかはログから判別不可能なため、場に戻す操作は対応しないこととする。
-    // このため家臣がサプライに含まれる場合は山札の数が正しくカウントされないことがある。
     class LineAnalyzer
     {
         // action時のカードの移動元と移動先はstateによって変わる。手札と場の札は区別しない。
@@ -33,16 +31,19 @@ namespace WindowsFormsApp1
             getting_in_hand,    // 「獲得した。」：サプライ→手札
 
             getting_on_deck,    // 「獲得した。」：サプライ→山札
+
+            vassal,             // "家臣"使用中。「捨て札にした。」で山札を捨て札にした後、捨て札にしたカードと同名のカードを使用した場合は、捨て札にしたカードを手札に戻す。
+                                // (捨て札にしたカードを使用せずに手札から同名のカードを使用した場合はログから判別できない。)
         };
 
 
         private void UseCard(string card)
         {
             string[] discardingDeckCards = { // 山札を捨て札にするカード
-                "家臣",       // 基本 
+                       // 基本 
             };
             string[] trashingDeckCards = { // 山札を廃棄するカード
-                              // 基本
+                       // 基本
             };
             string[] discardingTrashingDeckCards = { // 山札を捨て札にし、山札を廃棄するカード
                 "山賊", "衛兵", // 基本
@@ -62,8 +63,16 @@ namespace WindowsFormsApp1
             else if (puttingFromDiscardCards.Any(card.Equals)) current_state = state.putting_from_discard;
             else if (gettingInHandCards.Any(card.Equals)) current_state = state.getting_in_hand;
             else if (gettingOnDeckCards.Any(card.Equals)) current_state = state.getting_on_deck;
+            else if (card.Equals("家臣")) current_state = state.vassal;
             else current_state = state.normal;
+            if (card.Equals(vassalDiscard))
+            {
+                myHand.Add(card);
+                myDiscard.Remove(card);
+            }
         }
+
+        private string vassalDiscard;   // "家臣"によって山札から捨て札にされたカード
 
         private bool justAfterShuffle = false;
 
@@ -140,10 +149,11 @@ namespace WindowsFormsApp1
                             myDiscard.AddRange(cards);
                             Remove(ref myHand, cards, "捨てるカードが手札にありません。");
                         }
-                        else if (current_state == state.discarding_deck || current_state == state.discarding_trashing_deck)
+                        else if (current_state == state.discarding_deck || current_state == state.discarding_trashing_deck || current_state == state.vassal)
                         {
                             myDiscard.AddRange(cards);
                             Remove(ref myDeck, cards, "捨てるカードが山札にありません。");
+                            if (current_state == state.vassal) vassalDiscard = cards[0];
                         }
                         else throw new Exception("stateが不適切です。 action = " + action + ", state = " + current_state.ToString());
                         break;

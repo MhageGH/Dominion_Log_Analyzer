@@ -39,6 +39,7 @@
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.label_deck0 = new System.Windows.Forms.Label();
             this.label_name0_deck = new System.Windows.Forms.Label();
+            this.label_message = new System.Windows.Forms.Label();
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.SuspendLayout();
@@ -56,7 +57,7 @@
             // button_analyze
             // 
             this.button_analyze.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.button_analyze.Location = new System.Drawing.Point(94, 514);
+            this.button_analyze.Location = new System.Drawing.Point(12, 514);
             this.button_analyze.Name = "button_analyze";
             this.button_analyze.Size = new System.Drawing.Size(103, 23);
             this.button_analyze.TabIndex = 1;
@@ -160,11 +161,22 @@
             this.label_name0_deck.TabIndex = 3;
             this.label_name0_deck.Text = "-";
             // 
+            // label_message
+            // 
+            this.label_message.AutoSize = true;
+            this.label_message.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.label_message.Location = new System.Drawing.Point(139, 516);
+            this.label_message.Name = "label_message";
+            this.label_message.Size = new System.Drawing.Size(13, 18);
+            this.label_message.TabIndex = 6;
+            this.label_message.Text = "-";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(840, 552);
+            this.Controls.Add(this.label_message);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.label1);
@@ -194,6 +206,7 @@
         private System.Windows.Forms.Label label_name1;
         private System.Windows.Forms.Label label_name0;
         private System.Windows.Forms.Label label_deck0;
+        private System.Windows.Forms.Label label_message;
     }
 }
 

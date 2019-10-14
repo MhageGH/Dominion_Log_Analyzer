@@ -15,7 +15,8 @@ namespace WindowsFormsApp1
         private void button_analyze_Click(object sender, EventArgs e)
         {
             var analyzer = new DominionLogAnalyzer2();
-            analyzer.Run(textBox_log.Text);
+            var result = analyzer.Run(textBox_log.Text);
+            label_message.Text = result ? "エラーなし" : "エラーあり。error_log.txtを見て下さい。";
 
             // 名前を表示
             var label_names = new Label[2] { label_name0, label_name1 };

@@ -74,7 +74,8 @@ namespace WindowsFormsApp1
 
         /// <summary>解析開始</summary>
         /// <param name="text">解析するテキスト</param>
-        public void Run(string text)
+        /// <return>成否</return>
+        public bool Run(string text)
         {
             var log = text.Split(new string[] { Environment.NewLine }, StringSplitOptions.None);
             myTurnNumber = GetMyTurnNumber(log);
@@ -83,10 +84,10 @@ namespace WindowsFormsApp1
             log = TrimLog(log, shortPlayerNames);
 
             var sequentialAnalyzer = new SequentialAnalyzer();
-            sequentialAnalyzer.Run(log, shortPlayerNames, myTurnNumber);
+            var result = sequentialAnalyzer.Run(log, shortPlayerNames, myTurnNumber);
             ownCards = sequentialAnalyzer.ownCards;
             myDeck = sequentialAnalyzer.myDeck;
-
+            return result;
         }
     }
 }
