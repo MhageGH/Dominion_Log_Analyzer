@@ -80,6 +80,7 @@ namespace WindowsFormsApp1
 
         private string[] InsertCleanup(string[] lines)
         {
+            if (lines.Any(l => l.Contains("クリーンアップした。"))) return lines;
             var idxs = new List<int>();
             int n = lines.ToList().FindIndex(l => l.Contains("ターン 1"));
             for (int i = n; i < lines.Length - 1; ++i)
@@ -131,6 +132,7 @@ namespace WindowsFormsApp1
             // temp
             ownCards = GetOwnCards(lines, shortPlayerNames);
 
+            var errorLog = new StringBuilder();
             var analyzer = new LineAnalyzer();
             for (int i = 0; i < lines.Length; ++i)
             {
@@ -140,10 +142,11 @@ namespace WindowsFormsApp1
                 }
                 catch (Exception e)
                 {
-                    System.Windows.Forms.MessageBox.Show(e.Message);
+                    errorLog.Append("行番号" + i.ToString() + ": " + e.Message + Environment.NewLine);
                 }
             }
             myDeck = analyzer.myDeck;
+            using (var sw = new System.IO.StreamWriter("error_log.txt")) sw.Write(errorLog);
         }
     }
 }
