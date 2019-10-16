@@ -14,7 +14,7 @@ namespace WindowsFormsApp1
         // 解析ボタンを押した時のイベント
         private void button_analyze_Click(object sender, EventArgs e)
         {
-            var analyzer = new DominionLogAnalyzer2();
+            var analyzer = new DominionLogAnalyzer();
             var result = analyzer.Run(textBox_log.Text);
             label_message.Text = result ? "エラーなし" : "エラーあり。error_log.txtを見て下さい。";
 

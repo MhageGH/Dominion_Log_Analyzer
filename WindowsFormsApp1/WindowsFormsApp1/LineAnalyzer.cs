@@ -7,64 +7,96 @@ namespace WindowsFormsApp1
     class LineAnalyzer
     {
         // action時のカードの移動元と移動先はstateによって変わる。手札と場の札は区別しない。
-        // stateは自分または相手によるカードの使用と購入とクリーンアップによって変わる。(闇市場要確認。購入時も続くstateの有無を確認)
+        // stateは自分または相手によるカードの使用と購入とクリーンアップによって変わる。
+        // (闇市場要確認。購入時も続くstateの有無を確認)
+        [Flags]
         private enum state {
-            normal,             // 「獲得した。」「購入・獲得した。」「受け取った。」：サプライ→捨て札
-                                // 「引いた。」：山札→手札
-                                // 「捨て札にした。」：手札→捨て札
-                                // 「廃棄した。」：手札→廃棄置き場
-                                // 「呼び出した。」：酒場→手札
-                                // 「置いた。」：手札→山札
-                                // 「渡した。」：手札→相手の手札
-                                // 「戻した。」：手札→サプライ
-                                // 「シャフルした。」：捨て札→山札
-                                // 「クリーンアップした。」手札→捨て札
+            // 「獲得した。」「購入・獲得した。」「受け取った。」：サプライ→捨て札
+            // 「引いた。」：山札→手札
+            // 「捨て札にした。」：手札→捨て札
+            // 「廃棄した。」：手札→廃棄置き場
+            // 「呼び出した。」：酒場→手札
+            // 「置いた。」：手札→山札
+            // 「渡した。」：手札→相手の手札
+            // 「戻した。」：手札→サプライ
+            // 「シャフルした。」：捨て札→山札
+            // 「クリーンアップした。」手札→捨て札
+            normal = 1 << 0,
 
-            discarding_deck,    // 「捨て札にした。」：山札→捨て札
+            // 「捨て札にした。」：山札→捨て札
+            discarding_deck = 1 << 1,
 
-            trashing_deck,      // 「廃棄した。」：山札→廃棄置き場
+            // 「廃棄した。」：山札→廃棄置き場
+            trashing_deck = 1 << 2,
 
-            discarding_trashing_deck, // 「捨て札にした。」：山札→捨て札、「廃棄した。」：山札→廃棄置き場
+            // 「置いた。」：捨て札→山札
+            putting_from_discard = 1 << 3,
 
-            putting_from_discard, // 「置いた。」：捨て札→山札
+            // 「獲得した。」：サプライ→手札
+            getting_in_hand = 1 << 4,
 
-            getting_in_hand,    // 「獲得した。」：サプライ→手札
+            // 「獲得した。」：サプライ→山札
+            getting_on_deck = 1 << 5,
 
-            getting_on_deck,    // 「獲得した。」：サプライ→山札
+            // 「見た。」：山札→手札
+            look_to_draw = 1 << 6,
 
-            vassal,             // "家臣"使用中。「捨て札にした。」で山札を捨て札にした後、捨て札にしたカードと同名のカードを使用した場合は、捨て札にしたカードを手札に戻す。
-                                // (捨て札にしたカードを使用せずに手札から同名のカードを使用した場合はログから判別できない。)
+            // "家臣"使用中。
+            //「捨て札にした。」で山札を捨て札にした後、捨て札にしたカードと同名のカードを使用した場合は、捨て札にしたカードを手札に戻す。
+            // (捨て札にしたカードを使用せずに手札から同名のカードを使用した場合はログから判別できない。)
+            vassal = 1 << 7,    
         };
 
 
         private void UseCard(string card)
         {
-            string[] discardingDeckCards = { // 山札を捨て札にするカード
-                       // 基本 
+            // 山札を捨て札にするカード
+            string[] discardingDeckCards = { 
+                "山賊", // 基本 
             };
-            string[] trashingDeckCards = { // 山札を廃棄するカード
-                       // 基本
+
+            // 山札を廃棄するカード
+            string[] trashingDeckCards = { 
+                "山賊", // 基本
             };
-            string[] discardingTrashingDeckCards = { // 山札を捨て札にし、山札を廃棄するカード
-                "山賊", "衛兵", // 基本
-            };
-            string[] puttingFromDiscardCards = { // 捨て札から山札の上に札を置くカード
+
+            // 捨て札から山札の上に札を置くカード
+            string[] puttingFromDiscardCards = { 
                 "前駆者", // 基本。
             };
-            string[] gettingInHandCards = { // 手札に獲得するカード
+
+            // 手札に獲得するカード
+            string[] gettingInHandCards = { 
                 "職人", "鉱山", // 基本
             };
-            string[] gettingOnDeckCards = { // 山札の上に獲得するカード
+
+            // 山札の上に獲得するカード
+            string[] gettingOnDeckCards = { 
                 "役人",  // 基本
             };
-            if (discardingDeckCards.Any(card.Equals)) current_state = state.discarding_deck;
-            else if (trashingDeckCards.Any(card.Equals)) current_state = state.trashing_deck;
-            else if (discardingTrashingDeckCards.Any(card.Equals)) current_state = state.discarding_trashing_deck;
-            else if (puttingFromDiscardCards.Any(card.Equals)) current_state = state.putting_from_discard;
-            else if (gettingInHandCards.Any(card.Equals)) current_state = state.getting_in_hand;
-            else if (gettingOnDeckCards.Any(card.Equals)) current_state = state.getting_on_deck;
-            else if (card.Equals("家臣")) current_state = state.vassal;
-            else current_state = state.normal;
+
+            // 見ることが引くことになるカード
+            string[] lookToDrawCards = { 
+                "衛兵",  // 基本
+            };
+
+            current_state = 0;
+            if (discardingDeckCards.Any(card.Equals))
+                current_state |= state.discarding_deck;
+            if (trashingDeckCards.Any(card.Equals))
+                current_state |= state.trashing_deck;
+            if (puttingFromDiscardCards.Any(card.Equals))
+                current_state |= state.putting_from_discard;
+            if (gettingInHandCards.Any(card.Equals))
+                current_state |= state.getting_in_hand;
+            if (gettingOnDeckCards.Any(card.Equals))
+                current_state |= state.getting_on_deck;
+            if (lookToDrawCards.Any(card.Equals))
+                current_state |= state.look_to_draw;
+            if (card.Equals("家臣"))
+                current_state = state.vassal;
+            if (current_state == 0)
+                current_state = state.normal;
             if (card.Equals(vassalDiscard))
             {
                 myHand.Add(card);
@@ -72,7 +104,8 @@ namespace WindowsFormsApp1
             }
         }
 
-        private string vassalDiscard;   // "家臣"によって山札から捨て札にされたカード
+        // "家臣"によって山札から捨て札にされたカード
+        private string vassalDiscard;   
 
         private bool justAfterShuffle = false;
 
@@ -86,6 +119,12 @@ namespace WindowsFormsApp1
 
         private List<string> myHand = new List<string>();
 
+        private string[] shortPlayerNames;
+
+        private int myTurnNumber;
+
+        private List<string> myDeck = new List<string>();
+
         private void Remove(ref List<string> removed_cards, List<string> cards, string errorMessage)
         {
             foreach (var card in cards)
@@ -94,14 +133,24 @@ namespace WindowsFormsApp1
                 else throw new Exception(errorMessage);
             }
         }
-        /// <summary>自分の山札</summary>
-        public List<string> myDeck = new List<string>();
 
-        /// <summary>解析開始</summary>
-        /// <param name="lines">解析する行</param>
         /// <param name="shortPlayerNames">プレイヤ短縮名の配列(手番順)</param>
         /// <param name="myTurnNumber">自分の手番</param>
-        public void Run(string line, string[] shortPlayerNames, int myTurnNumber)
+        public LineAnalyzer(string[] shortPlayerNames, int myTurnNumber)
+        {
+            this.shortPlayerNames = shortPlayerNames;
+            this.myTurnNumber = myTurnNumber;
+        }
+
+        /// <summary>自分の山札を取得</summary>
+        public List<string> GetMyDeck()
+        {
+            return myDeck;
+        }
+
+        /// <summary>1行を処理する</summary>
+        /// <param name="line">行</param>
+        public void Transact(string line)
         {
             var myName = shortPlayerNames[myTurnNumber];
             var opponentName = shortPlayerNames[(myTurnNumber + 1) % 2];
@@ -116,14 +165,12 @@ namespace WindowsFormsApp1
                         break;
                     case "受け取った。":
                     case "獲得した。":
-                        if (current_state == state.normal)
-                            myDiscard.AddRange(cards);
-                        else if (current_state == state.getting_in_hand)
+                        if (current_state.HasFlag(state.getting_in_hand))
                             myHand.AddRange(cards);
-                        else if (current_state == state.getting_on_deck)
+                        else if (current_state.HasFlag(state.getting_on_deck))
                             myDeck.AddRange(cards);
                         else
-                            throw new Exception("stateが不適切です。 action = " + action + ", state = " + current_state.ToString());
+                            myDiscard.AddRange(cards);
                         break;
                     case "シャッフルした。":
                         justAfterShuffle = true;
@@ -138,49 +185,55 @@ namespace WindowsFormsApp1
                         Remove(ref myDeck, cards, "引くカードが山札にありません。");
                         myHand.AddRange(cards);
                         break;
+                    case "見た。":
+                        if (current_state.HasFlag(state.look_to_draw))
+                        {
+                            if (justAfterShuffle && numAtShuffle >= cards.Count)
+                                throw new Exception("山札が残っているのにシャッフルしました。");
+                            justAfterShuffle = false;
+                            Remove(ref myDeck, cards, "引くカードが山札にありません。");
+                            myHand.AddRange(cards);
+                        }
+                        break;
                     case "クリーンアップした。":
                         myDiscard.AddRange(myHand);
                         myHand.Clear();
                         current_state = state.normal;
                         break;
                     case "捨て札にした。":
-                        if (current_state == state.normal)
-                        {
-                            myDiscard.AddRange(cards);
-                            Remove(ref myHand, cards, "捨てるカードが手札にありません。");
-                        }
-                        else if (current_state == state.discarding_deck || current_state == state.discarding_trashing_deck || current_state == state.vassal)
+                        if (current_state.HasFlag(state.discarding_deck) || current_state.HasFlag(state.vassal))
                         {
                             myDiscard.AddRange(cards);
                             Remove(ref myDeck, cards, "捨てるカードが山札にありません。");
                             if (current_state == state.vassal) vassalDiscard = cards[0];
                         }
-                        else throw new Exception("stateが不適切です。 action = " + action + ", state = " + current_state.ToString());
+                        else
+                        {
+                            myDiscard.AddRange(cards);
+                            Remove(ref myHand, cards, "捨てるカードが手札にありません。");
+                        }
                         break;
                     case "廃棄した。":
-                        if (current_state == state.normal)
-                            Remove(ref myHand, cards, "廃棄するカードが手札にありません。");
-                        else if (current_state == state.trashing_deck || current_state == state.discarding_trashing_deck)
+                        if (current_state.HasFlag(state.trashing_deck))
                             Remove(ref myDeck, cards, "廃棄するカードが山札にありません。");
                         else
-                            throw new Exception("stateが不適切です。 action = " + action + ", state = " + current_state.ToString());
+                            Remove(ref myHand, cards, "廃棄するカードが手札にありません。");
                         break;
                     case "呼び出した。":
                         myHand.AddRange(cards);
                         Remove(ref myBar, cards, "呼び出すカードが酒場にありません。");
                         break;
                     case "置いた。":
-                        if (current_state == state.normal)
-                        {
-                            myDeck.AddRange(cards);
-                            Remove(ref myHand, cards, "置くカードが手札にありません。");
-                        }
-                        else if (current_state == state.putting_from_discard)
+                        if (current_state.HasFlag(state.putting_from_discard))
                         {
                             myDeck.AddRange(cards);
                             Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
                         }
-                        else throw new Exception("stateが不適切です。 action = " + action + ", state = " + current_state.ToString());
+                        else
+                        {
+                            myDeck.AddRange(cards);
+                            Remove(ref myHand, cards, "置くカードが手札にありません。");
+                        }
                         break;
                     case "渡した。":
                         Remove(ref myHand, cards, "渡すカードが手札にありません。");
