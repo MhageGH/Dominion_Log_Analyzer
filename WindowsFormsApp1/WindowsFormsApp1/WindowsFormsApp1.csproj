@@ -62,7 +62,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DominionLogAnalyzer_old.cs" />
     <Compile Include="DominionLogAnalyzer.cs" />
     <Compile Include="Form1.cs">
       <SubType>Form</SubType>

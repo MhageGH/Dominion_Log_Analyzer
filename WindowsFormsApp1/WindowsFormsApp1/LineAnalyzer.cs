@@ -8,11 +8,12 @@ namespace WindowsFormsApp1
     {
         // action時のカードの移動元と移動先はstateによって変わる。手札と場の札は区別しない。
         // stateは自分または相手によるカードの使用と購入とクリーンアップによって変わる。
+        // normal以外のstateは併用できる。stateで記述していないactionはnormalの挙動が適用される。
         // (闇市場要確認。購入時も続くstateの有無を確認)
         [Flags]
         private enum state {
             // 「獲得した。」「購入・獲得した。」「受け取った。」：サプライ→捨て札
-            // 「引いた。」：山札→手札
+            // 「引いた。」、「指定し、的中した。」、「手札に加えた。」：山札→手札
             // 「捨て札にした。」：手札→捨て札
             // 「廃棄した。」：手札→廃棄置き場
             // 「呼び出した。」：酒場→手札
@@ -58,16 +59,19 @@ namespace WindowsFormsApp1
             // 山札を廃棄するカード
             string[] trashingDeckCards = { 
                 "山賊", // 基本
+                "詐欺師", // 陰謀
             };
 
             // 捨て札から山札の上に札を置くカード
             string[] puttingFromDiscardCards = { 
                 "前駆者", // 基本。
+                "身代わり", // 陰謀
             };
 
             // 手札に獲得するカード
             string[] gettingInHandCards = { 
                 "職人", "鉱山", // 基本
+                "拷問人", "交易場", // 陰謀
             };
 
             // 山札の上に獲得するカード
@@ -78,6 +82,11 @@ namespace WindowsFormsApp1
             // 見ることが引くことになるカード
             string[] lookToDrawCards = { 
                 "衛兵",  // 基本
+            };
+
+            // 酒場に置くカード
+            string[] reserveCards = { 
+                "法貨", "複製", "案内人", "鼠取り", "御料車", "変容", "ワイン商", "遠隔地", "教師"  // 冒険
             };
 
             current_state = 0;
@@ -97,10 +106,16 @@ namespace WindowsFormsApp1
                 current_state = state.vassal;
             if (current_state == 0)
                 current_state = state.normal;
+
             if (card.Equals(vassalDiscard))
             {
                 myHand.Add(card);
                 myDiscard.Remove(card);
+            }
+            if (reserveCards.Any(card.Equals))
+            {
+                myBar.Add(card);
+                myHand.Remove(card);
             }
         }
 
@@ -179,6 +194,8 @@ namespace WindowsFormsApp1
                         myDiscard.Clear();
                         break;
                     case "引いた。":
+                    case "指定し、的中した。":   // 願いの井戸
+                    case "手札に加えた。":       // パトロール
                         if (justAfterShuffle && numAtShuffle >= cards.Count)
                             throw new Exception("山札が残っているのにシャッフルしました。");
                         justAfterShuffle = false;
@@ -220,10 +237,14 @@ namespace WindowsFormsApp1
                             Remove(ref myHand, cards, "廃棄するカードが手札にありません。");
                         break;
                     case "呼び出した。":
+                        // TODO
+                        // ワイン商は「購入フェイズを終了した」のあと「ワイン商(〇枚)を捨て札にした」のログで酒場から捨て札に戻る。
+                        // 直後にクリーンアップなので場に呼び出したと考えても同じ。
                         myHand.AddRange(cards);
                         Remove(ref myBar, cards, "呼び出すカードが酒場にありません。");
                         break;
                     case "置いた。":
+                    case "山札に加えた。": // 隠し通路
                         if (current_state.HasFlag(state.putting_from_discard))
                         {
                             myDeck.AddRange(cards);
@@ -244,7 +265,7 @@ namespace WindowsFormsApp1
             {
                 if (action == "渡した。") myHand.AddRange(cards);
             }
-            if (action == "使用した。") UseCard(cards[0]);
+            if (action == "使用した。" || action == "再使用した。") UseCard(cards[0]);
         }
     }
 }
