@@ -11,38 +11,40 @@ namespace WindowsFormsApp1
         // normal以外のstateは併用できる。stateで記述していないactionはnormalの挙動が適用される。
         // (闇市場要確認。購入時も続くstateの有無を確認)
         [Flags]
-        private enum state {
-            // 「獲得した。」「購入・獲得した。」「受け取った。」：サプライ→捨て札
-            // 「引いた。」、「指定し、的中した。」：山札→手札
-            // 「捨て札にした。」：手札→捨て札
-            // 「廃棄した。」：手札→廃棄置き場
-            // 「呼び出した。」：酒場→手札
-            // 「置いた。」：手札→山札
-            // 「渡した。」：手札→相手の手札
-            // 「戻した。」：手札→サプライ
-            // 「シャフルした。」：捨て札→山札
-            // 「クリーンアップした。」：手札→捨て札
-            // 「開始した。」：持続場→手札
-            // 「手札に加えた。」：山札→手札
-            // 「山札に加えた。」：手札→山札
+        private enum state
+        {
+            // 「獲得した。」「購入・獲得した。」「受け取った。」サプライ→捨て札
+            // 「引いた。」、「指定し、的中した。」山札→手札
+            // 「捨て札にした。」手札→捨て札
+            // 「廃棄した。」手札→廃棄置き場
+            // 「呼び出した。」酒場→手札
+            // 「置いた。」手札→山札
+            // 「渡した。」手札→相手の手札
+            // 「戻した。」手札→サプライ
+            // 「シャフルした。」捨て札→山札
+            // 「クリーンアップした。」手札→捨て札
+            // 「開始した。」持続場→手札
+            // 「手札に加えた。」山札→手札
+            // 「山札に加えた。」手札→山札
+            // 「見た。」「公開した。」移動なし
             normal = 1 << 0,
 
-            // 「捨て札にした。」：山札→捨て札
+            // 「捨て札にした。」山札→捨て札
             discarding_deck = 1 << 1,
 
-            // 「廃棄した。」：山札→廃棄置き場
+            // 「廃棄した。」山札→廃棄置き場
             trashing_deck = 1 << 2,
 
-            // 「置いた。」：捨て札→山札
+            // 「置いた。」捨て札→山札
             putting_from_discard = 1 << 3,
 
-            // 「獲得した。」：サプライ→手札
+            // 「獲得した。」サプライ→手札
             getting_in_hand = 1 << 4,
 
-            // 「獲得した。」：サプライ→山札
+            // 「獲得した。」サプライ→山札
             getting_on_deck = 1 << 5,
 
-            // 「見た。」：山札→手札
+            // 「見た。」山札→手札
             look_to_draw = 1 << 6,
 
             // "家臣"使用中。
@@ -58,6 +60,12 @@ namespace WindowsFormsApp1
 
             // 「置いた。」山札→原住民の村マット、「手札に加えた。」原住民の村マット→手札
             native_village = 1 << 10,
+
+            // 「置いた。」無効
+            no_put = 1 << 11,
+
+            // 「公開した。」山札→手札
+            open_to_draw = 1 << 12,
         };
 
 
@@ -67,6 +75,7 @@ namespace WindowsFormsApp1
             string[] discardingDeckCards = { 
                 "山賊", // 基本 
                 "海賊船", "海の妖婆", // 海辺
+                "念視の泉", // 錬金術
             };
 
             // 山札を廃棄するカード
@@ -95,7 +104,7 @@ namespace WindowsFormsApp1
                 "海の妖婆", "宝の地図", // 海辺
             };
 
-            // 見ることが引くことになるカード
+            // 見ることが引くことになることで辻褄が合うログを持つカード。
             string[] lookToDrawCards = { 
                 "衛兵",  // 基本
                 "見張り", "航海士", "真珠採り", // 海辺
@@ -111,7 +120,7 @@ namespace WindowsFormsApp1
                 "隊商", "漁村", "停泊所", "灯台", "商船", "前哨地", "策士", "船着場", // 海辺
             };
 
-            // 手札を脇に置くカード
+            // 手札を持続場に置くカード
             string[] asideCards = {
                 "停泊所",  // 海辺
             };
@@ -124,6 +133,16 @@ namespace WindowsFormsApp1
             // 原住民の村マットを使うカード
             string[] nativeVillageCards = {
                 "原住民の村", // 海辺
+            };
+
+            // 置くことを無効にすることで辻褄が合うログを持つカード。
+            string[] noPutCards = {
+                "薬師", "念視の泉", // 錬金術
+            };
+
+            // 公開することが引くことになることで辻褄が合うログを持つカード。
+            string[] openToDrawCards = {
+                "ゴーレム", // 錬金術
             };
 
             current_state = 0;
@@ -147,6 +166,10 @@ namespace WindowsFormsApp1
                 current_state |= state.putting_to_island;
             if (nativeVillageCards.Any(card.Equals))
                 current_state |= state.native_village;
+            if (noPutCards.Any(card.Equals))
+                current_state |= state.no_put;
+            if (openToDrawCards.Any(card.Equals))
+                current_state |= state.open_to_draw;
             if (current_state == 0)
                 current_state = state.normal;
 
@@ -303,7 +326,8 @@ namespace WindowsFormsApp1
                         Remove(ref myBar, cards, "呼び出すカードが酒場にありません。");
                         break;
                     case "置いた。":
-                        if (current_state.HasFlag(state.putting_from_discard))
+                        if (current_state.HasFlag(state.no_put)) break;
+                        else if (current_state.HasFlag(state.putting_from_discard))
                         {
                             myDeck.AddRange(cards);
                             Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
