@@ -13,7 +13,7 @@ namespace WindowsFormsApp1
         [Flags]
         private enum state {
             // 「獲得した。」「購入・獲得した。」「受け取った。」：サプライ→捨て札
-            // 「引いた。」、「指定し、的中した。」、「手札に加えた。」：山札→手札
+            // 「引いた。」、「指定し、的中した。」：山札→手札
             // 「捨て札にした。」：手札→捨て札
             // 「廃棄した。」：手札→廃棄置き場
             // 「呼び出した。」：酒場→手札
@@ -21,7 +21,10 @@ namespace WindowsFormsApp1
             // 「渡した。」：手札→相手の手札
             // 「戻した。」：手札→サプライ
             // 「シャフルした。」：捨て札→山札
-            // 「クリーンアップした。」手札→捨て札
+            // 「クリーンアップした。」：手札→捨て札
+            // 「開始した。」：持続場→手札
+            // 「手札に加えた。」：山札→手札
+            // 「山札に加えた。」：手札→山札
             normal = 1 << 0,
 
             // 「捨て札にした。」：山札→捨て札
@@ -45,7 +48,16 @@ namespace WindowsFormsApp1
             // "家臣"使用中。
             //「捨て札にした。」で山札を捨て札にした後、捨て札にしたカードと同名のカードを使用した場合は、捨て札にしたカードを手札に戻す。
             // (捨て札にしたカードを使用せずに手札から同名のカードを使用した場合はログから判別できない。)
-            vassal = 1 << 7,    
+            vassal = 1 << 7,
+
+            // 「置いた。」手札→持続場
+            putting_to_duration = 1 << 8,
+
+            // 「置いた。」手札→島
+            putting_to_island = 1 << 9,
+
+            // 「置いた。」山札→原住民の村マット、「手札に加えた。」原住民の村マット→手札
+            native_village = 1 << 10,
         };
 
 
@@ -54,12 +66,14 @@ namespace WindowsFormsApp1
             // 山札を捨て札にするカード
             string[] discardingDeckCards = { 
                 "山賊", // 基本 
+                "海賊船", "海の妖婆", // 海辺
             };
 
             // 山札を廃棄するカード
             string[] trashingDeckCards = { 
-                "山賊", // 基本
+                "山賊",   // 基本
                 "詐欺師", // 陰謀
+                "海賊船", // 海辺
             };
 
             // 捨て札から山札の上に札を置くカード
@@ -72,21 +86,44 @@ namespace WindowsFormsApp1
             string[] gettingInHandCards = { 
                 "職人", "鉱山", // 基本
                 "拷問人", "交易場", // 陰謀
+                "探検家", // 海辺
             };
 
             // 山札の上に獲得するカード
             string[] gettingOnDeckCards = { 
-                "役人",  // 基本
+                "役人",     // 基本
+                "海の妖婆", "宝の地図", // 海辺
             };
 
             // 見ることが引くことになるカード
             string[] lookToDrawCards = { 
                 "衛兵",  // 基本
+                "見張り", "航海士", "真珠採り", // 海辺
             };
 
             // 酒場に置くカード
             string[] reserveCards = { 
                 "法貨", "複製", "案内人", "鼠取り", "御料車", "変容", "ワイン商", "遠隔地", "教師"  // 冒険
+            };
+
+            // 持続カード
+            string[] durationCards = {
+                "隊商", "漁村", "停泊所", "灯台", "商船", "前哨地", "策士", "船着場", // 海辺
+            };
+
+            // 手札を脇に置くカード
+            string[] asideCards = {
+                "停泊所",  // 海辺
+            };
+
+            // 手札を島に置くカード
+            string[] islandCards = {
+                "島",    // 海辺
+            };
+
+            // 原住民の村マットを使うカード
+            string[] nativeVillageCards = {
+                "原住民の村", // 海辺
             };
 
             current_state = 0;
@@ -104,6 +141,12 @@ namespace WindowsFormsApp1
                 current_state |= state.look_to_draw;
             if (card.Equals("家臣"))
                 current_state = state.vassal;
+            if (asideCards.Any(card.Equals))
+                current_state |= state.putting_to_duration;
+            if (islandCards.Any(card.Equals))
+                current_state |= state.putting_to_island;
+            if (nativeVillageCards.Any(card.Equals))
+                current_state |= state.native_village;
             if (current_state == 0)
                 current_state = state.normal;
 
@@ -115,6 +158,11 @@ namespace WindowsFormsApp1
             if (reserveCards.Any(card.Equals))
             {
                 myBar.Add(card);
+                myHand.Remove(card);
+            }
+            if (durationCards.Any(card.Equals))
+            {
+                myDuration.Add(card);
                 myHand.Remove(card);
             }
         }
@@ -129,6 +177,12 @@ namespace WindowsFormsApp1
         private state current_state = state.normal;
 
         private List<string> myBar = new List<string>();
+
+        private List<string> myIsland = new List<string>();
+
+        private List<string> myNativeVillage = new List<string>();
+
+        private List<string> myDuration = new List<string>();
 
         private List<string> myDiscard = new List<string>();
 
@@ -169,6 +223,12 @@ namespace WindowsFormsApp1
         {
             var myName = shortPlayerNames[myTurnNumber];
             var opponentName = shortPlayerNames[(myTurnNumber + 1) % 2];
+            if (line.Contains("前哨地は不発となる。"))
+            {
+                myHand.Add("前哨地");
+                Remove(ref myDuration, new List<string> { "前哨地" }, "持続場に前哨地がありません");
+                return;
+            }
             var (name, action, cards, destination) = Extractor.Extract(line);
             if (name == myName)
             {
@@ -195,7 +255,6 @@ namespace WindowsFormsApp1
                         break;
                     case "引いた。":
                     case "指定し、的中した。":   // 願いの井戸
-                    case "手札に加えた。":       // パトロール
                         if (justAfterShuffle && numAtShuffle >= cards.Count)
                             throw new Exception("山札が残っているのにシャッフルしました。");
                         justAfterShuffle = false;
@@ -244,11 +303,20 @@ namespace WindowsFormsApp1
                         Remove(ref myBar, cards, "呼び出すカードが酒場にありません。");
                         break;
                     case "置いた。":
-                    case "山札に加えた。": // 隠し通路
                         if (current_state.HasFlag(state.putting_from_discard))
                         {
                             myDeck.AddRange(cards);
                             Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
+                        }
+                        else if (current_state.HasFlag(state.putting_to_duration))
+                        {
+                            myDuration.AddRange(cards);
+                            Remove(ref myHand, cards, "置くカードが手札にありません。");
+                        }
+                        else if (current_state.HasFlag(state.native_village))
+                        {
+                            myNativeVillage.AddRange(cards);
+                            Remove(ref myDeck, cards, "置くカードが山札にありません。");
                         }
                         else
                         {
@@ -256,8 +324,33 @@ namespace WindowsFormsApp1
                             Remove(ref myHand, cards, "置くカードが手札にありません。");
                         }
                         break;
+
+                    case "加えた。":
+                        if (destination == "山札")
+                        {
+                            myDeck.AddRange(cards);
+                            Remove(ref myHand, cards, "置くカードが手札にありません。");
+                        }
+                        else if (destination == "手札")
+                        {
+                            if (current_state.HasFlag(state.native_village))
+                            {
+                                myHand.AddRange(cards);
+                                Remove(ref myNativeVillage, cards, "引くカードが原住民の村マットにありません。");
+                            }
+                            else
+                            {
+                                myHand.AddRange(cards);
+                                Remove(ref myDeck, cards, "引くカードが山札にありません。");
+                            }
+                        }
+                        break;
                     case "渡した。":
                         Remove(ref myHand, cards, "渡すカードが手札にありません。");
+                        break;
+                    case "開始した。":
+                        myHand.AddRange(myDuration);
+                        myDuration.Clear();
                         break;
                 }
             }

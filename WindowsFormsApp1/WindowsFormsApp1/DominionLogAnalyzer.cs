@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 
 namespace WindowsFormsApp1
 {
@@ -10,40 +10,48 @@ namespace WindowsFormsApp1
     {
         // ログ1行から主語と動詞と目的語を抽出する
         static public (string name, string action, List<string> cards, string destination) Extract(string line)
-        {                                                                       // 例："Tは銅貨3枚、屋敷2枚を引いた。"
+        {
+            // line = "Tは銅貨3枚、屋敷2枚を引いた。" → name = "T", l = "銅貨3枚、屋敷2枚を引いた。"
             var l = line;
             int idx = l.IndexOf("は");
             if (idx == -1) return (null, null, null, null);
             var name = l.Substring(0, idx);
-            l = l.Substring(idx + 1);                                     // 例："銅貨3枚、屋敷2枚を引いた。"
+            l = l.Substring(idx + 1);
 
+            // l = "停泊所により呪いを脇に置いた。" → l = "呪いを脇に置いた。"
+            l = Regex.Replace(l, @".*により", "");
+
+            // l = "銅貨3枚、屋敷2枚を引いた。" → cards = {"銅貨", "銅貨", "銅貨", "屋敷", "屋敷"}, l = "引いた。"
             idx = l.IndexOf("を");
             if (idx == -1) return (name, null, null, null);
-            var obj = l.Remove(idx);                                           // 例："銅貨3枚、屋敷2枚"
-            var ss = obj.Split(new string[] { "、" }, StringSplitOptions.None);   // 例：{"銅貨3枚", "屋敷2枚"}
+            var obj = l.Remove(idx);                                           
+            var ss = obj.Split(new string[] { "、" }, StringSplitOptions.None);
             var cards = new List<string>();
             foreach (var s in ss)
             {
-                var n = System.Text.RegularExpressions.Regex.Replace(s, @"[^0-9]", "");         // 数字を抽出
-                if (n == "" || !s.Contains("枚")) cards.Add(s);                                 // 〇枚がない -> 1枚 or 枚数ではない
-                else for (int i = 0; i < int.Parse(n); ++i) cards.Add(s.Remove(s.IndexOf(n)));  // 例： リスト {"銅貨", "銅貨", "銅貨"}
+                var n = Regex.Replace(s, @"[^0-9]", "");         // 数字を抽出
+                if (n == "" || !s.Contains("枚")) cards.Add(s);  // 〇枚がない -> 1枚 or 枚数ではない
+                else for (int i = 0; i < int.Parse(n); ++i) cards.Add(s.Remove(s.IndexOf(n)));
             }
-            l = l.Substring(idx + 1);                                     // 例："引いた。"
+            l = l.Substring(idx + 1);
 
+            // l = "酒場マットに置いた。" → destination = "酒場", l = "置いた。"
             string destination;
-            if (l == "捨て札にした。") destination = null;           // "捨て札にした。"はまとめて一つの動詞とする
+            if (l == "捨て札にした。") destination = null;  // "捨て札にした。"はまとめて一つの動詞とする
             else
             {
-                idx = l.IndexOf("に");                               // 例："酒場マットに置いた。"
+                idx = l.IndexOf("に");                               
                 if (idx != -1)
                 {
-                    destination = l.Remove(idx);                     // 例："酒場マット"
-                    l = l.Substring(idx + 1);                        // 例："置いた。"
+                    destination = l.Remove(idx); 
+                    l = l.Substring(idx + 1);
                 }
                 else destination = null;
             }
 
-            var action = l;
+            // l = "引いた(隊商)。" → action = "引いた。"
+            var action = Regex.Replace(l, @"\(.*\)", "");
+
             return (name, action, cards, destination);
         }
     }
