@@ -18,8 +18,17 @@ namespace WindowsFormsApp1
             var name = l.Substring(0, idx);
             l = l.Substring(idx + 1);
 
+            // 修飾の削除
             // l = "停泊所により呪いを脇に置いた。" → l = "呪いを脇に置いた。"
             l = Regex.Replace(l, @".*により", "");
+
+            // リアクションの処理
+            // l = "玉璽でリアクションした。" → action = "リアクションした。", cards = {"玉璽"}
+            if (l.Contains("リアクションした。"))
+            {
+                idx = l.IndexOf("で");
+                return (name, "リアクションした。", new List<string> { l.Remove(idx) }, null);
+            }
 
             // l = "銅貨3枚、屋敷2枚を引いた。" → cards = {"銅貨", "銅貨", "銅貨", "屋敷", "屋敷"}, l = "引いた。"
             idx = l.IndexOf("を");
@@ -50,7 +59,8 @@ namespace WindowsFormsApp1
             }
 
             // l = "引いた(隊商)。" → action = "引いた。"
-            var action = Regex.Replace(l, @"\(.*\)", "");
+            // l = "投機を使用した。 (+$1)" → action = "投機を使用した。"
+            var action = Regex.Replace(l, @"\(.*\)", "").TrimEnd();
 
             return (name, action, cards, destination);
         }

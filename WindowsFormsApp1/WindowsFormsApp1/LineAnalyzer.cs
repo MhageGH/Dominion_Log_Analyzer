@@ -30,13 +30,13 @@ namespace WindowsFormsApp1
             normal = 1 << 0,
 
             // 「捨て札にした。」山札→捨て札
-            discarding_deck = 1 << 1,
+            deck_to_discard = 1 << 1,
 
             // 「廃棄した。」山札→廃棄置き場
-            trashing_deck = 1 << 2,
+            deck_to_trash = 1 << 2,
 
             // 「置いた。」捨て札→山札
-            putting_from_discard = 1 << 3,
+            discard_to_deck = 1 << 3,
 
             // 「獲得した。」サプライ→手札
             getting_in_hand = 1 << 4,
@@ -53,10 +53,10 @@ namespace WindowsFormsApp1
             vassal = 1 << 7,
 
             // 「置いた。」手札→持続場
-            putting_to_duration = 1 << 8,
+            hand_to_duration = 1 << 8,
 
             // 「置いた。」手札→島
-            putting_to_island = 1 << 9,
+            hand_to_island = 1 << 9,
 
             // 「置いた。」山札→原住民の村マット、「手札に加えた。」原住民の村マット→手札
             native_village = 1 << 10,
@@ -66,27 +66,34 @@ namespace WindowsFormsApp1
 
             // 「公開した。」山札→手札
             open_to_draw = 1 << 12,
-        };
 
+            // 「手札に加えた。」捨て札→手札
+            discard_to_hand = 1 << 13,
+
+            // 「廃棄した。」捨て札→廃棄置き場
+            discard_to_trash = 1 << 14,
+        };
 
         private void UseCard(string card)
         {
             // 山札を捨て札にするカード
-            string[] discardingDeckCards = { 
-                "山賊", // 基本 
+            string[] deckToDiscardCards = {
+                "山賊",         // 基本 
                 "海賊船", "海の妖婆", // 海辺
-                "念視の泉", // 錬金術
+                "念視の泉",     // 錬金術
+                "借金", "大衆", // 繁栄
             };
 
             // 山札を廃棄するカード
-            string[] trashingDeckCards = { 
+            string[] deckToTrashCards = {
                 "山賊",   // 基本
                 "詐欺師", // 陰謀
                 "海賊船", // 海辺
+                "借金",   // 繁栄
             };
 
             // 捨て札から山札の上に札を置くカード
-            string[] puttingFromDiscardCards = { 
+            string[] discardToDeckCards = { 
                 "前駆者", // 基本。
                 "身代わり", // 陰謀
             };
@@ -138,20 +145,27 @@ namespace WindowsFormsApp1
             // 置くことを無効にすることで辻褄が合うログを持つカード。
             string[] noPutCards = {
                 "薬師", "念視の泉", // 錬金術
+                "大衆", // 繁栄
             };
 
             // 公開することが引くことになることで辻褄が合うログを持つカード。
             string[] openToDrawCards = {
                 "ゴーレム", // 錬金術
+                "投機", // 繁栄
+            };
+
+            // 捨て札を手札に入れるカード
+            string[] discardToHandCards = {
+                "会計所", // 繁栄
             };
 
             current_state = 0;
-            if (discardingDeckCards.Any(card.Equals))
-                current_state |= state.discarding_deck;
-            if (trashingDeckCards.Any(card.Equals))
-                current_state |= state.trashing_deck;
-            if (puttingFromDiscardCards.Any(card.Equals))
-                current_state |= state.putting_from_discard;
+            if (deckToDiscardCards.Any(card.Equals))
+                current_state |= state.deck_to_discard;
+            if (deckToTrashCards.Any(card.Equals))
+                current_state |= state.deck_to_trash;
+            if (discardToDeckCards.Any(card.Equals))
+                current_state |= state.discard_to_deck;
             if (gettingInHandCards.Any(card.Equals))
                 current_state |= state.getting_in_hand;
             if (gettingOnDeckCards.Any(card.Equals))
@@ -161,15 +175,17 @@ namespace WindowsFormsApp1
             if (card.Equals("家臣"))
                 current_state = state.vassal;
             if (asideCards.Any(card.Equals))
-                current_state |= state.putting_to_duration;
+                current_state |= state.hand_to_duration;
             if (islandCards.Any(card.Equals))
-                current_state |= state.putting_to_island;
+                current_state |= state.hand_to_island;
             if (nativeVillageCards.Any(card.Equals))
                 current_state |= state.native_village;
             if (noPutCards.Any(card.Equals))
                 current_state |= state.no_put;
             if (openToDrawCards.Any(card.Equals))
                 current_state |= state.open_to_draw;
+            if (discardToHandCards.Any(card.Equals))
+                current_state |= state.discard_to_hand;
             if (current_state == 0)
                 current_state = state.normal;
 
@@ -300,7 +316,7 @@ namespace WindowsFormsApp1
                         current_state = state.normal;
                         break;
                     case "捨て札にした。":
-                        if (current_state.HasFlag(state.discarding_deck) || current_state.HasFlag(state.vassal))
+                        if (current_state.HasFlag(state.deck_to_discard) || current_state.HasFlag(state.vassal))
                         {
                             myDiscard.AddRange(cards);
                             Remove(ref myDeck, cards, "捨てるカードが山札にありません。");
@@ -313,8 +329,10 @@ namespace WindowsFormsApp1
                         }
                         break;
                     case "廃棄した。":
-                        if (current_state.HasFlag(state.trashing_deck))
+                        if (current_state.HasFlag(state.deck_to_trash))
                             Remove(ref myDeck, cards, "廃棄するカードが山札にありません。");
+                        else if (current_state.HasFlag(state.discard_to_trash))
+                            Remove(ref myDiscard, cards, "廃棄するカードが捨て札にありません。");
                         else
                             Remove(ref myHand, cards, "廃棄するカードが手札にありません。");
                         break;
@@ -327,12 +345,12 @@ namespace WindowsFormsApp1
                         break;
                     case "置いた。":
                         if (current_state.HasFlag(state.no_put)) break;
-                        else if (current_state.HasFlag(state.putting_from_discard))
+                        else if (current_state.HasFlag(state.discard_to_deck))
                         {
                             myDeck.AddRange(cards);
                             Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
                         }
-                        else if (current_state.HasFlag(state.putting_to_duration))
+                        else if (current_state.HasFlag(state.hand_to_duration))
                         {
                             myDuration.AddRange(cards);
                             Remove(ref myHand, cards, "置くカードが手札にありません。");
@@ -362,6 +380,11 @@ namespace WindowsFormsApp1
                                 myHand.AddRange(cards);
                                 Remove(ref myNativeVillage, cards, "引くカードが原住民の村マットにありません。");
                             }
+                            if (current_state.HasFlag(state.discard_to_hand))
+                            {
+                                myHand.AddRange(cards);
+                                Remove(ref myDiscard, cards, "引くカードが捨て札にありません。");
+                            }
                             else
                             {
                                 myHand.AddRange(cards);
@@ -376,13 +399,24 @@ namespace WindowsFormsApp1
                         myHand.AddRange(myDuration);
                         myDuration.Clear();
                         break;
+                    case "リアクションした。":
+                        if (cards[0] == "玉璽") current_state |= state.discard_to_deck;
+                        if (cards[0] == "望楼") current_state |= state.discard_to_deck | state.discard_to_trash;
+                        break;
+                    case "公開した。":
+                        if (current_state.HasFlag(state.open_to_draw))
+                        {
+                            myHand.AddRange(cards);
+                            Remove(ref myDeck, cards, "引くカードが山札にありません。");
+                        }
+                        break;
                 }
             }
             else if (name == opponentName)
             {
                 if (action == "渡した。") myHand.AddRange(cards);
             }
-            if (action == "使用した。" || action == "再使用した。") UseCard(cards[0]);
+            if (action == "使用した。" || action == "再使用した。" || action == "再々使用した。") UseCard(cards[0]);
         }
     }
 }
