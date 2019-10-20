@@ -86,6 +86,10 @@ namespace WindowsFormsApp1
             // 手札にあれば手札から廃棄し、手札になければ捨て札から廃棄する。
             // 手札にあるが捨て札から廃棄した場合はログから判別できない。
             hermit = 1 << 18,
+
+            // "伝令官"使用中
+            // 「公開した。」カードがアクションカードであれば、山札→手札
+            herald = 1 << 19,
         };
 
         private void UseCard(string card)
@@ -98,6 +102,7 @@ namespace WindowsFormsApp1
                 "借金", "大衆",                 // 繁栄
                 "農村", "狩猟団", "道化師",     // 収穫祭
                 "地下墓所", "金物商", "賢者",   // 暗黒
+                "助言者", "熟練工",             // ギルド
             };
 
             // 山札を廃棄するカード
@@ -131,6 +136,7 @@ namespace WindowsFormsApp1
                 "金貨袋", "馬上槍試合", // 収穫祭
                 "開発",                 // 異郷
                 "武器庫",               // 暗黒
+                "収税吏",               // ギルド
             };
 
             // 見ることが引くことになることで辻褄が合うログを持つカード。
@@ -182,6 +188,7 @@ namespace WindowsFormsApp1
                 "デイム・アンナ", "デイム・ジョセフィーヌ", "デイム・モリー", "デイム・ナタリー", "デイム・シルビア", // 暗黒
                 "サー・ベイリー", "サー・デストリー", "サー・マーチン", "サー・マイケル", "サー・ヴァンデル",         // 暗黒
                 "盗賊", "建て直し", "吟遊詩人", // 暗黒
+                "医者",           // ギルド
             };
 
             // 捨て札を手札に入れるカード
@@ -192,6 +199,16 @@ namespace WindowsFormsApp1
             // 隠遁者
             string[] hermitCard = {
                 "隠遁者", // 暗黒
+            };
+
+            // 伝令官
+            string[] heraldCard = {
+                "伝令官", //  ギルド
+            };
+
+            // 家臣
+            string[] vassalCard = {
+                "家臣", // 基本
             };
 
             current_state = 0;
@@ -207,8 +224,8 @@ namespace WindowsFormsApp1
                 current_state |= state.getting_on_deck;
             if (lookToDrawCards.Any(card.Equals))
                 current_state |= state.look_to_draw;
-            if (card.Equals("家臣"))
-                current_state = state.vassal;
+            if (vassalCard.Any(card.Equals))
+                current_state |= state.vassal;
             if (asideCards.Any(card.Equals))
                 current_state |= state.hand_to_duration;
             if (islandCards.Any(card.Equals))
@@ -223,6 +240,8 @@ namespace WindowsFormsApp1
                 current_state |= state.discard_to_hand;
             if (hermitCard.Any(card.Equals))
                 current_state |= state.hermit;
+            if (heraldCard.Any(card.Equals))
+                current_state |= state.herald;
             if (current_state == 0)
                 current_state = state.normal;
 
@@ -310,7 +329,10 @@ namespace WindowsFormsApp1
             {
                 switch (action)
                 {
-                    case "購入した。":   // 交易人でリアクションした時に発生するログ。購入するが獲得しないため無視する。銀貨の獲得ログはこの後発生する。
+                    case "購入した。":   // 購入するが獲得しない。獲得ログはこの後発生する。
+                        // 伝令官の購入時効果：2019年10月20日現在、この効果で山札に行くカード名が匿名の「カード」となる不具合があるため正常動作しない。
+                        if (cards[0] == "伝令官") current_state |= state.discard_to_deck;
+                        if (cards[0] == "医者") current_state |= state.look_to_draw; // 購入時効果
                         break;
                     case "購入・獲得した。":
                         current_state = state.normal;
@@ -318,8 +340,8 @@ namespace WindowsFormsApp1
                         else myDiscard.AddRange(cards);
                         // 宿屋は獲得時効果で「山札をシャッフルした。」と「〇を山札に混ぜシャッフルした。」の2つのログが現れる
                         // 捨て札を山札に入れる通常シャッフルは行わない
-                        if (cards[0] == "宿屋") current_state |= state.no_shuffle;  
-                        if (cards[0] == "義賊") current_state |= state.open_to_draw; // 義賊は獲得時効果ではなく購入時効果
+                        if (cards[0] == "宿屋") current_state |= state.no_shuffle;   // 獲得時効果
+                        if (cards[0] == "義賊") current_state |= state.open_to_draw; // 購入時効果
                         break;
                     case "受け取った。":
                     case "獲得した。":
@@ -478,6 +500,11 @@ namespace WindowsFormsApp1
                         break;
                     case "公開した。":
                         if (current_state.HasFlag(state.open_to_draw))
+                        {
+                            myHand.AddRange(cards);
+                            Remove(ref myDeck, cards, "引くカードが山札にありません。");
+                        }
+                        if (current_state.HasFlag(state.herald) && CardList.actionCards.Any(cards[0].Equals))
                         {
                             myHand.AddRange(cards);
                             Remove(ref myDeck, cards, "引くカードが山札にありません。");
