@@ -78,17 +78,26 @@ namespace WindowsFormsApp1
 
             // シャッフル無効
             no_shuffle = 1 << 16,
+
+            // "城塞"廃棄中
+            fortress = 1 << 17,
+
+            // "隠遁者"使用中
+            // 手札にあれば手札から廃棄し、手札になければ捨て札から廃棄する。
+            // 手札にあるが捨て札から廃棄した場合はログから判別できない。
+            hermit = 1 << 18,
         };
 
         private void UseCard(string card)
         {
             // 山札を捨て札にするカード
             string[] deckToDiscardCards = {
-                "山賊",                     // 基本 
-                "海賊船", "海の妖婆",       // 海辺
-                "念視の泉",                 // 錬金術
-                "借金", "大衆",             // 繁栄
-                "農村", "狩猟団", "道化師", // 収穫祭
+                "山賊",                         // 基本 
+                "海賊船", "海の妖婆",           // 海辺
+                "念視の泉",                     // 錬金術
+                "借金", "大衆",                 // 繁栄
+                "農村", "狩猟団", "道化師",     // 収穫祭
+                "地下墓所", "金物商", "賢者",   // 暗黒
             };
 
             // 山札を廃棄するカード
@@ -101,16 +110,18 @@ namespace WindowsFormsApp1
 
             // 捨て札から山札の上に札を置くカード
             string[] discardToDeckCards = { 
-                "前駆者", // 基本。
-                "身代わり", // 陰謀
+                "前駆者",       // 基本。
+                "身代わり",     // 陰謀
+                "ゴミあさり",   // 暗黒
             };
 
             // 手札に獲得するカード
             string[] gettingInHandCards = { 
-                "職人", "鉱山", // 基本
+                "職人", "鉱山",     // 基本
                 "拷問人", "交易場", // 陰謀
-                "探検家", // 海辺
-                "不正利得", // 異郷
+                "探検家",           // 海辺
+                "不正利得",         // 異郷
+                "物乞い",           // 暗黒
             };
 
             // 山札の上に獲得するカード
@@ -118,14 +129,16 @@ namespace WindowsFormsApp1
                 "役人",                 // 基本
                 "海の妖婆", "宝の地図", // 海辺
                 "金貨袋", "馬上槍試合", // 収穫祭
-                "開発", // 異郷
+                "開発",                 // 異郷
+                "武器庫",               // 暗黒
             };
 
             // 見ることが引くことになることで辻褄が合うログを持つカード。
             string[] lookToDrawCards = { 
-                "衛兵",  // 基本
-                "見張り", "航海士", "真珠採り", // 海辺
+                "衛兵",                             // 基本
+                "見張り", "航海士", "真珠採り",     // 海辺
                 "地図職人", "公爵夫人", "よろずや", // 異郷
+                "生存者",                           // 暗黒
             };
 
             // 酒場に置くカード
@@ -156,7 +169,8 @@ namespace WindowsFormsApp1
             // 置くことを無効にすることで辻褄が合うログを持つカード。
             string[] noPutCards = {
                 "薬師", "念視の泉", // 錬金術
-                "大衆", // 繁栄
+                "大衆",             // 繁栄
+                "浮浪者",           // 暗黒
             };
 
             // 公開することが引くことになることで辻褄が合うログを持つカード。
@@ -165,11 +179,19 @@ namespace WindowsFormsApp1
                 "投機",           // 繁栄
                 "占い師", "収穫", // 収穫祭
                 "義賊", "神託",   // 異郷
+                "デイム・アンナ", "デイム・ジョセフィーヌ", "デイム・モリー", "デイム・ナタリー", "デイム・シルビア", // 暗黒
+                "サー・ベイリー", "サー・デストリー", "サー・マーチン", "サー・マイケル", "サー・ヴァンデル",         // 暗黒
+                "盗賊", "建て直し", "吟遊詩人", // 暗黒
             };
 
             // 捨て札を手札に入れるカード
             string[] discardToHandCards = {
                 "会計所", // 繁栄
+            };
+
+            // 隠遁者
+            string[] hermitCard = {
+                "隠遁者", // 暗黒
             };
 
             current_state = 0;
@@ -199,6 +221,8 @@ namespace WindowsFormsApp1
                 current_state |= state.open_to_draw;
             if (discardToHandCards.Any(card.Equals))
                 current_state |= state.discard_to_hand;
+            if (hermitCard.Any(card.Equals))
+                current_state |= state.hermit;
             if (current_state == 0)
                 current_state = state.normal;
 
@@ -301,7 +325,7 @@ namespace WindowsFormsApp1
                     case "獲得した。":
                         if (current_state.HasFlag(state.getting_in_hand))
                             myHand.AddRange(cards);
-                        else if (current_state.HasFlag(state.getting_on_deck) || cards[0] == "遊牧民の野営地")
+                        else if (current_state.HasFlag(state.getting_on_deck) || cards[0] == "遊牧民の野営地" || destination == "山札の上")
                             myDeck.AddRange(cards);
                         else
                             myDiscard.AddRange(cards);
@@ -323,7 +347,7 @@ namespace WindowsFormsApp1
                         current_state ^= state.no_shuffle;
                         break;
                     case "引いた。":
-                    case "指定し、的中した。":   // 願いの井戸。的中しない場合のテキストは「Tを銅貨を指定したが、香辛料商人が公開された。」のように主語の後が「を」になっていて解析に失敗するが無視しても問題なし。
+                    case "指定し、的中した。":   // 願いの井戸、秘術師。的中しない場合のテキストは「Tを銅貨を指定したが、香辛料商人が公開された。」のように主語の後が「を」になっていて解析に失敗するが無視しても問題なし。
                         if (justAfterShuffle && numAtShuffle >= cards.Count)
                             throw new Exception("山札が残っているのにシャッフルしました。");
                         justAfterShuffle = false;
@@ -359,10 +383,16 @@ namespace WindowsFormsApp1
                         }
                         break;
                     case "廃棄した。":
+                        if (cards.Contains("城塞")) current_state |= state.fortress;
                         if (current_state.HasFlag(state.deck_to_trash))
                             Remove(ref myDeck, cards, "廃棄するカードが山札にありません。");
                         else if (current_state.HasFlag(state.discard_to_trash))
                             Remove(ref myDiscard, cards, "廃棄するカードが捨て札にありません。");
+                        else if (current_state.HasFlag(state.hermit))
+                        {
+                            if (myHand.Contains(cards[0])) myHand.Remove(cards[0]);
+                            else Remove(ref myDiscard, cards, "廃棄するカードが捨て札にありません。");
+                        }
                         else
                             Remove(ref myHand, cards, "廃棄するカードが手札にありません。");
                         break;
@@ -375,7 +405,7 @@ namespace WindowsFormsApp1
                         break;
                     case "置いた。":
                         if (current_state.HasFlag(state.no_put)) break;
-                        else if (current_state.HasFlag(state.discard_to_deck))
+                        else if (current_state.HasFlag(state.discard_to_deck) && destination != "捨て札置き場")
                         {
                             myDeck.AddRange(cards);
                             Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
@@ -390,15 +420,15 @@ namespace WindowsFormsApp1
                             myNativeVillage.AddRange(cards);
                             Remove(ref myDeck, cards, "置くカードが山札にありません。");
                         }
-                        else if (cards[0] == "山札" && destination == "捨て札置き場")
-                        {
-                            myDiscard.AddRange(myDeck);
-                            myDeck.Clear();
-                        }
-                        else
+                        else if (destination != "捨て札置き場")
                         {
                             myDeck.AddRange(cards);
                             Remove(ref myHand, cards, "置くカードが手札にありません。");
+                        }
+                        if (cards[0] == "山札" && destination == "捨て札置き場")
+                        {
+                            myDiscard.AddRange(myDeck);
+                            myDeck.Clear();
                         }
                         break;
 
@@ -421,6 +451,7 @@ namespace WindowsFormsApp1
                                 Remove(ref myDiscard, cards, "引くカードが捨て札にありません。");
                             }
                             else if (current_state.HasFlag(state.turn_start)) break;    // ターン開始時に持続カードと同時に手札に加えているので無視する
+                            else if (current_state.HasFlag(state.fortress)) myHand.AddRange(cards); // 城塞を手札に加える
                             else
                             {
                                 myHand.AddRange(cards);
@@ -451,6 +482,9 @@ namespace WindowsFormsApp1
                             myHand.AddRange(cards);
                             Remove(ref myDeck, cards, "引くカードが山札にありません。");
                         }
+                        break;
+                    case "戻した。":
+                        Remove(ref myHand, cards, "戻すカードが手札にありません。");
                         break;
                 }
             }
