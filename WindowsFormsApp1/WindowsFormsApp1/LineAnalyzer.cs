@@ -75,6 +75,9 @@ namespace WindowsFormsApp1
 
             // ターン開始時
             turn_start = 1 << 15,
+
+            // シャッフル無効
+            no_shuffle = 1 << 16,
         };
 
         private void UseCard(string card)
@@ -107,6 +110,7 @@ namespace WindowsFormsApp1
                 "職人", "鉱山", // 基本
                 "拷問人", "交易場", // 陰謀
                 "探検家", // 海辺
+                "不正利得", // 異郷
             };
 
             // 山札の上に獲得するカード
@@ -114,12 +118,14 @@ namespace WindowsFormsApp1
                 "役人",                 // 基本
                 "海の妖婆", "宝の地図", // 海辺
                 "金貨袋", "馬上槍試合", // 収穫祭
+                "開発", // 異郷
             };
 
             // 見ることが引くことになることで辻褄が合うログを持つカード。
             string[] lookToDrawCards = { 
                 "衛兵",  // 基本
                 "見張り", "航海士", "真珠採り", // 海辺
+                "地図職人", "公爵夫人", "よろずや", // 異郷
             };
 
             // 酒場に置くカード
@@ -158,6 +164,7 @@ namespace WindowsFormsApp1
                 "ゴーレム",       // 錬金術
                 "投機",           // 繁栄
                 "占い師", "収穫", // 収穫祭
+                "義賊", "神託",   // 異郷
             };
 
             // 捨て札を手札に入れるカード
@@ -279,24 +286,41 @@ namespace WindowsFormsApp1
             {
                 switch (action)
                 {
+                    case "購入した。":   // 交易人でリアクションした時に発生するログ。購入するが獲得しないため無視する。銀貨の獲得ログはこの後発生する。
+                        break;
                     case "購入・獲得した。":
                         current_state = state.normal;
-                        myDiscard.AddRange(cards);
+                        if (cards[0] == "遊牧民の野営地") myDeck.AddRange(cards);
+                        else myDiscard.AddRange(cards);
+                        // 宿屋は獲得時効果で「山札をシャッフルした。」と「〇を山札に混ぜシャッフルした。」の2つのログが現れる
+                        // 捨て札を山札に入れる通常シャッフルは行わない
+                        if (cards[0] == "宿屋") current_state |= state.no_shuffle;  
+                        if (cards[0] == "義賊") current_state |= state.open_to_draw; // 義賊は獲得時効果ではなく購入時効果
                         break;
                     case "受け取った。":
                     case "獲得した。":
                         if (current_state.HasFlag(state.getting_in_hand))
                             myHand.AddRange(cards);
-                        else if (current_state.HasFlag(state.getting_on_deck))
+                        else if (current_state.HasFlag(state.getting_on_deck) || cards[0] == "遊牧民の野営地")
                             myDeck.AddRange(cards);
                         else
                             myDiscard.AddRange(cards);
+                        if (cards[0] == "宿屋") current_state |= state.no_shuffle;
                         break;
                     case "シャッフルした。":
+                        if (current_state.HasFlag(state.no_shuffle)) break;
                         justAfterShuffle = true;
                         numAtShuffle = myDeck.Count;
                         myDeck.AddRange(myDiscard);
                         myDiscard.Clear();
+                        break;
+                    case "混ぜシャッフルした。":  // 宿屋
+                        if (destination == "山札")
+                        {
+                            myDeck.AddRange(cards);
+                            Remove(ref myDiscard, cards, "混ぜるカードが捨て札にありません。");
+                        }
+                        current_state ^= state.no_shuffle;
                         break;
                     case "引いた。":
                     case "指定し、的中した。":   // 願いの井戸。的中しない場合のテキストは「Tを銅貨を指定したが、香辛料商人が公開された。」のように主語の後が「を」になっていて解析に失敗するが無視しても問題なし。
@@ -419,6 +443,7 @@ namespace WindowsFormsApp1
                         if (cards[0] == "玉璽") current_state |= state.discard_to_deck;
                         if (cards[0] == "望楼") current_state |= state.discard_to_deck | state.discard_to_trash;
                         if (cards[0] == "馬商人") current_state |= state.hand_to_duration;
+                        if (cards[0] == "愚者の黄金") current_state |= state.getting_on_deck;
                         break;
                     case "公開した。":
                         if (current_state.HasFlag(state.open_to_draw))
