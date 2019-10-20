@@ -72,16 +72,20 @@ namespace WindowsFormsApp1
 
             // 「廃棄した。」捨て札→廃棄置き場
             discard_to_trash = 1 << 14,
+
+            // ターン開始時
+            turn_start = 1 << 15,
         };
 
         private void UseCard(string card)
         {
             // 山札を捨て札にするカード
             string[] deckToDiscardCards = {
-                "山賊",         // 基本 
-                "海賊船", "海の妖婆", // 海辺
-                "念視の泉",     // 錬金術
-                "借金", "大衆", // 繁栄
+                "山賊",                     // 基本 
+                "海賊船", "海の妖婆",       // 海辺
+                "念視の泉",                 // 錬金術
+                "借金", "大衆",             // 繁栄
+                "農村", "狩猟団", "道化師", // 収穫祭
             };
 
             // 山札を廃棄するカード
@@ -107,8 +111,9 @@ namespace WindowsFormsApp1
 
             // 山札の上に獲得するカード
             string[] gettingOnDeckCards = { 
-                "役人",     // 基本
+                "役人",                 // 基本
                 "海の妖婆", "宝の地図", // 海辺
+                "金貨袋", "馬上槍試合", // 収穫祭
             };
 
             // 見ることが引くことになることで辻褄が合うログを持つカード。
@@ -150,8 +155,9 @@ namespace WindowsFormsApp1
 
             // 公開することが引くことになることで辻褄が合うログを持つカード。
             string[] openToDrawCards = {
-                "ゴーレム", // 錬金術
-                "投機", // 繁栄
+                "ゴーレム",       // 錬金術
+                "投機",           // 繁栄
+                "占い師", "収穫", // 収穫祭
             };
 
             // 捨て札を手札に入れるカード
@@ -293,7 +299,7 @@ namespace WindowsFormsApp1
                         myDiscard.Clear();
                         break;
                     case "引いた。":
-                    case "指定し、的中した。":   // 願いの井戸
+                    case "指定し、的中した。":   // 願いの井戸。的中しない場合のテキストは「Tを銅貨を指定したが、香辛料商人が公開された。」のように主語の後が「を」になっていて解析に失敗するが無視しても問題なし。
                         if (justAfterShuffle && numAtShuffle >= cards.Count)
                             throw new Exception("山札が残っているのにシャッフルしました。");
                         justAfterShuffle = false;
@@ -360,6 +366,11 @@ namespace WindowsFormsApp1
                             myNativeVillage.AddRange(cards);
                             Remove(ref myDeck, cards, "置くカードが山札にありません。");
                         }
+                        else if (cards[0] == "山札" && destination == "捨て札置き場")
+                        {
+                            myDiscard.AddRange(myDeck);
+                            myDeck.Clear();
+                        }
                         else
                         {
                             myDeck.AddRange(cards);
@@ -380,11 +391,12 @@ namespace WindowsFormsApp1
                                 myHand.AddRange(cards);
                                 Remove(ref myNativeVillage, cards, "引くカードが原住民の村マットにありません。");
                             }
-                            if (current_state.HasFlag(state.discard_to_hand))
+                            else if (current_state.HasFlag(state.discard_to_hand))
                             {
                                 myHand.AddRange(cards);
                                 Remove(ref myDiscard, cards, "引くカードが捨て札にありません。");
                             }
+                            else if (current_state.HasFlag(state.turn_start)) break;    // ターン開始時に持続カードと同時に手札に加えているので無視する
                             else
                             {
                                 myHand.AddRange(cards);
@@ -396,12 +408,17 @@ namespace WindowsFormsApp1
                         Remove(ref myHand, cards, "渡すカードが手札にありません。");
                         break;
                     case "開始した。":
-                        myHand.AddRange(myDuration);
-                        myDuration.Clear();
+                        if (cards[0] == "ターン")    // ターンを開始した。
+                        {
+                            myHand.AddRange(myDuration);
+                            myDuration.Clear();
+                            current_state |= state.turn_start;
+                        }
                         break;
                     case "リアクションした。":
                         if (cards[0] == "玉璽") current_state |= state.discard_to_deck;
                         if (cards[0] == "望楼") current_state |= state.discard_to_deck | state.discard_to_trash;
+                        if (cards[0] == "馬商人") current_state |= state.hand_to_duration;
                         break;
                     case "公開した。":
                         if (current_state.HasFlag(state.open_to_draw))
