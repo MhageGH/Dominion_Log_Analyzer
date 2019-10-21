@@ -116,7 +116,7 @@ namespace WindowsFormsApp1
         // 所持カードを取得する
         private List<string>[] GetOwnCards(string[] lines, string[] shortPlayerNames)
         {
-            string[] get_strings = new string[] { "受け取った。", "獲得した。", "購入・獲得した。" };
+            string[] get_strings = new string[] { "受け取った。", "獲得した。", "購入・獲得した。", "廃棄置き場から獲得した。" };
             string[] lost_strings = new string[] { "廃棄した。", "戻した。" };
             string give_string = "渡した。";                                    // 仮面舞踏会
             var ownCards = new List<string>[2] { new List<string>(), new List<string>() };

@@ -9,7 +9,7 @@ namespace WindowsFormsApp1
         // action時のカードの移動元と移動先はstateによって変わる。手札と場の札は区別しない。
         // stateは自分または相手によるカードの使用と購入とクリーンアップによって変わる。
         // normal以外のstateは併用できる。stateで記述していないactionはnormalの挙動が適用される。
-        // (闇市場要確認。購入時も続くstateの有無を確認)
+        // (購入時も続くstateの有無を確認)
         [Flags]
         private enum state
         {
@@ -103,6 +103,7 @@ namespace WindowsFormsApp1
                 "農村", "狩猟団", "道化師",     // 収穫祭
                 "地下墓所", "金物商", "賢者",   // 暗黒
                 "助言者", "熟練工",             // ギルド
+                "公使",                         // プロモ
             };
 
             // 山札を廃棄するカード
@@ -155,11 +156,18 @@ namespace WindowsFormsApp1
             // 持続カード
             string[] durationCards = {
                 "隊商", "漁村", "停泊所", "灯台", "商船", "前哨地", "策士", "船着場", // 海辺
+                "教会", "船長", // プロモ
+            };
+
+            // 永久持続カード
+            string[] permanentDurationCards = {
+                "王子", // プロモ
             };
 
             // 手札を持続場に置くカード
             string[] asideCards = {
-                "停泊所",  // 海辺
+                "停泊所",       // 海辺
+                "王子", "教会", // プロモ
             };
 
             // 手札を島に置くカード
@@ -245,10 +253,14 @@ namespace WindowsFormsApp1
             if (current_state == 0)
                 current_state = state.normal;
 
-            if (card.Equals(vassalDiscard))
+            if (vassalDiscard != null)
             {
-                myHand.Add(card);
-                myDiscard.Remove(card);
+                if (card.Equals(vassalDiscard))
+                {
+                    myHand.Add(card);
+                    myDiscard.Remove(card);
+                }
+                vassalDiscard = null;
             }
             if (reserveCards.Any(card.Equals))
             {
@@ -260,10 +272,15 @@ namespace WindowsFormsApp1
                 myDuration.Add(card);
                 myHand.Remove(card);
             }
+            if (permanentDurationCards.Any(card.Equals))
+            {
+                myPermanentDuration.Add(card);
+                myHand.Remove(card);
+            }
         }
 
         // "家臣"によって山札から捨て札にされたカード
-        private string vassalDiscard;   
+        private string vassalDiscard = null;   
 
         private bool justAfterShuffle = false;
 
@@ -278,6 +295,8 @@ namespace WindowsFormsApp1
         private List<string> myNativeVillage = new List<string>();
 
         private List<string> myDuration = new List<string>();
+
+        private List<string> myPermanentDuration = new List<string>();
 
         private List<string> myDiscard = new List<string>();
 
@@ -330,9 +349,12 @@ namespace WindowsFormsApp1
                 switch (action)
                 {
                     case "購入した。":   // 購入するが獲得しない。獲得ログはこの後発生する。
+                        current_state = state.normal;
                         // 伝令官の購入時効果：2019年10月20日現在、この効果で山札に行くカード名が匿名の「カード」となる不具合があるため正常動作しない。
                         if (cards[0] == "伝令官") current_state |= state.discard_to_deck;
-                        if (cards[0] == "医者") current_state |= state.look_to_draw; // 購入時効果
+                        if (cards[0] == "医者") current_state |= state.look_to_draw;
+                        if (cards[0] == "召喚") current_state |= state.getting_in_hand;
+                        if (cards[0] == "義賊") current_state |= state.open_to_draw;
                         break;
                     case "購入・獲得した。":
                         current_state = state.normal;
@@ -341,10 +363,10 @@ namespace WindowsFormsApp1
                         // 宿屋は獲得時効果で「山札をシャッフルした。」と「〇を山札に混ぜシャッフルした。」の2つのログが現れる
                         // 捨て札を山札に入れる通常シャッフルは行わない
                         if (cards[0] == "宿屋") current_state |= state.no_shuffle;   // 獲得時効果
-                        if (cards[0] == "義賊") current_state |= state.open_to_draw; // 購入時効果
                         break;
                     case "受け取った。":
                     case "獲得した。":
+                    case "廃棄置き場から獲得した。":
                         if (current_state.HasFlag(state.getting_in_hand))
                             myHand.AddRange(cards);
                         else if (current_state.HasFlag(state.getting_on_deck) || cards[0] == "遊牧民の野営地" || destination == "山札の上")
@@ -432,7 +454,7 @@ namespace WindowsFormsApp1
                             myDeck.AddRange(cards);
                             Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
                         }
-                        else if (current_state.HasFlag(state.hand_to_duration))
+                        else if (current_state.HasFlag(state.hand_to_duration) || destination == "脇")
                         {
                             myDuration.AddRange(cards);
                             Remove(ref myHand, cards, "置くカードが手札にありません。");
