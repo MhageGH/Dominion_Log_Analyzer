@@ -9,12 +9,12 @@ namespace WindowsFormsApp1
     class Extractor
     {
         // ログ1行から主語と動詞と目的語を抽出する
-        static public (string name, string action, List<string> cards, string destination) Extract(string line)
+        static public (string name, string action, List<string> cards, string destination, string inParentheses) Extract(string line)
         {
             // line = "Tは銅貨3枚、屋敷2枚を引いた。" → name = "T", l = "銅貨3枚、屋敷2枚を引いた。"
             var l = line;
             int idx = l.IndexOf("は");
-            if (idx == -1) return (null, null, null, null);
+            if (idx == -1) return (null, null, null, null, null);
             var name = l.Substring(0, idx);
             l = l.Substring(idx + 1);
 
@@ -27,12 +27,12 @@ namespace WindowsFormsApp1
             if (l.Contains("リアクションした。"))
             {
                 idx = l.IndexOf("で");
-                return (name, "リアクションした。", new List<string> { l.Remove(idx) }, null);
+                return (name, "リアクションした。", new List<string> { l.Remove(idx) }, null, null);
             }
 
             // l = "銅貨3枚、屋敷2枚を引いた。" → cards = {"銅貨", "銅貨", "銅貨", "屋敷", "屋敷"}, l = "引いた。"
             idx = l.IndexOf("を");
-            if (idx == -1) return (name, null, null, null);
+            if (idx == -1) return (name, null, null, null, null);
             var obj = l.Remove(idx);                                           
             var ss = obj.Split(new string[] { "、" }, StringSplitOptions.None);
             var cards = new List<string>();
@@ -58,11 +58,12 @@ namespace WindowsFormsApp1
                 else destination = null;
             }
 
-            // l = "引いた(隊商)。" → action = "引いた。"
-            // l = "投機を使用した。 (+$1)" → action = "投機を使用した。"
+            // l = "引いた(隊商)。" → action = "引いた。", inParentheses = "隊商"
+            // l = "投機を使用した。 (+$1)" → action = "投機を使用した。", inParentheses = "+$1"
             var action = Regex.Replace(l, @"\(.*\)", "").TrimEnd();
+            var inParentheses = Regex.Replace(Regex.Replace(l, @".*\(", ""), @"\).*", "");
 
-            return (name, action, cards, destination);
+            return (name, action, cards, destination, inParentheses);
         }
     }
 
@@ -122,7 +123,7 @@ namespace WindowsFormsApp1
             var ownCards = new List<string>[2] { new List<string>(), new List<string>() };
             foreach (var line in lines)
             {
-                var (name, action, cards, destination) = Extractor.Extract(line);
+                var (name, action, cards, destination, inParentheses) = Extractor.Extract(line);
                 for (int i = 0; i < 2; ++i)
                 {
                     if (name == shortPlayerNames[i])
@@ -150,8 +151,12 @@ namespace WindowsFormsApp1
             {
                 if (lines[i].Contains("引いた。") && lines[i + 1] == "")
                 {
-                    if (lines[i - 1].Contains("シャッフルした。")) idxs.Add(i - 1);
-                    else idxs.Add(i);
+                    if (lines[i - 1].Contains("山札に混ぜシャッフルした。") && lines[i - 2].Contains("山札をシャッフルした。")) // イベント"寄付"の不自然なログ対応
+                        idxs.Add(i - 2);
+                    else if (lines[i - 1].Contains("シャッフルした。"))
+                        idxs.Add(i - 1);
+                    else
+                        idxs.Add(i);
                 }
                 if (lines[i].Contains("手札に加えた。") && lines[i + 1] == "") // イベント"保存"
                 {
@@ -173,8 +178,14 @@ namespace WindowsFormsApp1
             var extractedLog = new StringBuilder();
             foreach (var line in lines)
             {
-                var (name, action, cards, destination) = Extractor.Extract(line);
-                if (name != null) extractedLog.Append("name = " + name + "\taction = " + action + "\tcards = " + string.Join(",", cards) + "\tdestination = " + destination + Environment.NewLine);
+                var (name, action, cards, destination, inParentheses) = Extractor.Extract(line);
+                if (name != null) extractedLog.Append(
+                    "name = " + name 
+                    + "\taction = " + action 
+                    + "\tcards = " + string.Join(",", cards)
+                    + "\tdestination = " + destination
+                    + "\tinParentheses = " + inParentheses
+                    + Environment.NewLine);
             }
             using (var sw = new System.IO.StreamWriter("extracted_log.txt")) sw.Write(extractedLog);
             using (var sw = new System.IO.StreamWriter("game_log.txt")) sw.Write(string.Join(Environment.NewLine, lines));
