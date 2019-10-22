@@ -153,6 +153,11 @@ namespace WindowsFormsApp1
                     if (lines[i - 1].Contains("シャッフルした。")) idxs.Add(i - 1);
                     else idxs.Add(i);
                 }
+                if (lines[i].Contains("手札に加えた。") && lines[i + 1] == "") // イベント"保存"
+                {
+                    if (lines[i - 2].Contains("シャッフルした。")) idxs.Add(i - 2);
+                    else idxs.Add(i - 1);
+                }
             }
             var lines_list = lines.ToList();
             for (int i = 0; i < idxs.Count; ++i)
