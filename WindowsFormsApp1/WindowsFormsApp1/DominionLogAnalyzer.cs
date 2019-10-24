@@ -158,10 +158,11 @@ namespace WindowsFormsApp1
                     else
                         idxs.Add(i);
                 }
-                if (lines[i].Contains("手札に加えた。") && lines[i + 1] == "") // イベント"保存"
+                if (lines[i].Contains("手札に加えた。") && lines[i + 1] == "") // イベント"保存"、リアクション"忠犬"
                 {
                     if (lines[i - 2].Contains("シャッフルした。")) idxs.Add(i - 2);
                     else idxs.Add(i - 1);
+                    lines[i] += "(ターン終了時)";
                 }
             }
             var lines_list = lines.ToList();

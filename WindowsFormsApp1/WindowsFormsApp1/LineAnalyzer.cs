@@ -105,6 +105,17 @@ namespace WindowsFormsApp1
             // "石"の獲得・廃棄時効果中
             // この効果中に"銀貨"を獲得すると、購入フェイズ中であれば山札に、それ以外であれば手札に獲得する。
             stone = 1 << 22,
+
+            // カード獲得後
+            // 取り替え子対応のため。獲得直後に同じカードを戻す場合は取り替え子と判断する
+            afterGet = 1 << 23,
+
+            // カブラー効果中
+            cobbler = 1 << 24,
+
+            // "納骨堂"使用中
+            // myCryptにカードを置く。納骨堂のカードはターン開始時に一部を手札に加える。注意点は資料庫と同じ。
+            crypt = 1 << 25,
         };
 
         // カードの使用、購入、クリーンアップのいずれかでリセットされないstate
@@ -148,10 +159,11 @@ namespace WindowsFormsApp1
 
             // 山札を廃棄するカード
             string[] deckToTrashCards = {
-                "山賊",   // 基本
-                "詐欺師", // 陰謀
-                "海賊船", // 海辺
-                "借金",   // 繁栄
+                "山賊",            // 基本
+                "詐欺師",          // 陰謀
+                "海賊船",          // 海辺
+                "借金",            // 繁栄
+                "ゾンビの石工",    // 夜想曲
             };
 
             // 捨て札を廃棄するカード
@@ -173,6 +185,7 @@ namespace WindowsFormsApp1
                 "探検家",           // 海辺
                 "不正利得",         // 異郷
                 "物乞い",           // 暗黒
+                "願い",             // 夜想曲
             };
 
             // 山札の上に獲得するカード
@@ -192,6 +205,7 @@ namespace WindowsFormsApp1
                 "見張り", "航海士", "真珠採り",     // 海辺
                 "地図職人", "公爵夫人", "よろずや", // 異郷
                 "生存者",                           // 暗黒
+                "夜警", "ゾンビの密偵",             // 夜想曲
             };
 
             // 持続カード
@@ -200,6 +214,8 @@ namespace WindowsFormsApp1
                 "教会", "船長",                                                                     // プロモ
                 "魔除け", "橋の下のトロル", "隊商の護衛", "地下牢", "道具", "呪いの森", "沼の妖婆", // 冒険
                 "女魔術師",                                                                         // 帝国
+                "カブラー", "悪人のアジト", "ゴーストタウン", "守護者", "夜襲", "秘密の洞窟",       // 夜想曲
+                "幽霊",
             };
 
             // 永久持続カード
@@ -227,9 +243,10 @@ namespace WindowsFormsApp1
 
             // 置くことを無効にすることで辻褄が合うログを持つカード。
             string[] noPutCards = {
-                "薬師", "念視の泉", // 錬金術
-                "大衆",             // 繁栄
-                "浮浪者",           // 暗黒
+                "薬師", "念視の泉",        // 錬金術
+                "大衆",                    // 繁栄
+                "浮浪者",                  // 暗黒
+                "ウィル・オ・ウィスプ",    // 夜想曲
             };
 
             // 公開することが引くことになることで辻褄が合うログを持つカード。
@@ -243,6 +260,7 @@ namespace WindowsFormsApp1
                 "盗賊", "建て直し", "吟遊詩人", // 暗黒
                 "医者",           // ギルド
                 "巨人",           // 冒険
+                "幽霊",           // 夜想曲
             };
 
             // 捨て札を手札に入れるカード
@@ -269,6 +287,11 @@ namespace WindowsFormsApp1
             // 資料庫
             string[] archiveCard = {
                 "資料庫", // 帝国
+            };
+
+            // 納骨堂
+            string[] cryptCard = {
+                "納骨堂", // 夜想曲
             };
 
             current_state = 0;
@@ -306,6 +329,8 @@ namespace WindowsFormsApp1
                 current_state |= state.herald;
             if (archiveCard.Any(card.Equals))
                 current_state |= state.archive;
+            if (cryptCard.Any(card.Equals))
+                current_state |= state.crypt;
             if (current_state == 0)
                 current_state = state.normal;
             current_state2 ^= state2.duringBuy;
@@ -334,6 +359,11 @@ namespace WindowsFormsApp1
                 myArchive.Add(card);
                 myHand.Remove(card);
             }
+            if (cryptCard.Any(card.Equals))
+            {
+                myCrypt.Add(card);
+                myHand.Remove(card);
+            }
         }
 
         // "家臣"によって山札から捨て札にされたカード
@@ -347,6 +377,8 @@ namespace WindowsFormsApp1
 
         private state2 current_state2 = state2.normal;
 
+        private List<string> gotCards = new List<string>(); // 直前に獲得したカード
+
         private List<string> myBar = new List<string>();
 
         private List<string> myIsland = new List<string>();
@@ -359,6 +391,8 @@ namespace WindowsFormsApp1
 
         private List<string> myArchive = new List<string>();
 
+        private List<string> myCrypt = new List<string>();
+
         private List<string> myDiscard = new List<string>();
 
         private List<string> myHand = new List<string>();
@@ -368,6 +402,11 @@ namespace WindowsFormsApp1
         private int myTurnNumber;
 
         private List<string> myDeck = new List<string>();
+
+        static readonly string[] boons = { "大地の恵み", "田畑の恵み", "炎の恵み", "森の恵み", "月の恵み",
+                            "山の恵み", "川の恵み", "海の恵み", "空の恵み", "太陽の恵み", "沼の恵み", "風の恵み" };
+
+        static readonly string[] hexes = { "凶兆", "幻惑", "羨望", "飢饉", "恐怖", "貪欲", "憑依", "蝗害", "みじめな生活", "疫病", "貧困", "戦争" };
 
         private void Remove(ref List<string> removed_cards, List<string> cards, string errorMessage)
         {
@@ -429,11 +468,15 @@ namespace WindowsFormsApp1
                         current_state = state.normal;
                         current_state2 |= state2.duringBuy;
                         if (cards[0] == "遊牧民の野営地") myDeck.AddRange(cards);
+                        else if (cards[0] == "悪人のアジト" || cards[0] == "ゴーストタウン" || cards[0] == "守護者")
+                            myHand.AddRange(cards);
                         else myDiscard.AddRange(cards);
                         // 宿屋は獲得時効果で「山札をシャッフルした。」と「〇を山札に混ぜシャッフルした。」の2つのログが現れる
                         // 捨て札を山札に入れる通常シャッフルは行わない
                         if (cards[0] == "宿屋") current_state |= state.no_shuffle;   // 獲得時効果
                         if (cards[0] == "石") current_state |= state.getting_on_deck;
+                        current_state |= state.afterGet;
+                        gotCards = cards;
                         break;
                     case "受け取った。":
                     case "獲得した。":
@@ -442,6 +485,10 @@ namespace WindowsFormsApp1
                             myHand.AddRange(cards);
                         else if (current_state.HasFlag(state.getting_on_deck) || cards[0] == "遊牧民の野営地" || destination == "山札の上")
                             myDeck.AddRange(cards);
+                        else if (cards[0] == "悪人のアジト" || cards[0] == "ゴーストタウン" || cards[0] == "守護者" || cards[0] == "夜警")
+                            myHand.AddRange(cards);
+                        else if (current_state.HasFlag(state.turn_start) && current_state.HasFlag(state.cobbler))
+                            myHand.AddRange(cards);
                         else
                             myDiscard.AddRange(cards);
                         if (cards[0] == "宿屋") current_state |= state.no_shuffle;
@@ -450,6 +497,8 @@ namespace WindowsFormsApp1
                             if (current_state2.HasFlag(state2.duringBuy)) current_state |= state.getting_on_deck;
                             else current_state |= state.getting_in_hand;
                         }
+                        current_state |= state.afterGet;
+                        gotCards = cards;
                         break;
                     case "シャッフルした。":
                         if (current_state.HasFlag(state.no_shuffle)) break;
@@ -500,6 +549,7 @@ namespace WindowsFormsApp1
                         current_state2 ^= state2.duringBuy;
                         break;
                     case "捨て札にした。":
+                        if (boons.Any(cards[0].Equals) || hexes.Any(cards[0].Equals)) break;
                         if (current_state.HasFlag(state.deck_to_discard) || current_state.HasFlag(state.vassal))
                         {
                             myDiscard.AddRange(cards);
@@ -556,6 +606,11 @@ namespace WindowsFormsApp1
                         {
                             myArchive.AddRange(cards);
                             Remove(ref myDeck, cards, "置くカードが山札にありません。");
+                        }
+                        else if (current_state.HasFlag(state.crypt))
+                        {
+                            myCrypt.AddRange(cards);
+                            Remove(ref myHand, cards, "置くカードが手札にありません。");
                         }
                         else if (current_state.HasFlag(state.hand_to_duration) || destination == "脇")
                         {
@@ -614,14 +669,29 @@ namespace WindowsFormsApp1
                                         myArchive.Clear();
                                     }
                                 }
+                                if (myCrypt.Any() && inParentheses == "納骨堂")
+                                {
+                                    myHand.AddRange(cards);
+                                    Remove(ref myCrypt, cards, "引くカードが納骨堂にありません。");
+                                    if (myCrypt.FindIndex(m => m != "納骨堂") == -1)
+                                    {
+                                        myHand.AddRange(myCrypt);
+                                        myCrypt.Clear();
+                                    }
+                                }
                                 break;    // ターン開始時に持続カードと同時に手札に加えているので無視する
                             }
                             else if (current_state.HasFlag(state.fortress)) myHand.AddRange(cards); // 城塞を手札に加える
                             else if (current_state2.HasFlag(state2.save))
                             {
                                 myHand.AddRange(cards);
-                                Remove(ref myDuration, cards, "保存したカードがありません");
+                                Remove(ref myDuration, cards, "保存したカードがありません。");
                                 current_state2 ^= state2.save;
+                            }
+                            else if (inParentheses == "ターン終了時" && cards.Contains("忠犬"))
+                            {
+                                myHand.AddRange(cards);
+                                Remove(ref myDuration, cards, "忠犬がありません。");
                             }
                             else
                             {
@@ -636,9 +706,10 @@ namespace WindowsFormsApp1
                     case "開始した。":
                         if (cards[0] == "ターン")    // ターンを開始した。
                         {
+                            current_state |= state.turn_start;
+                            if (myDuration.Contains("カブラー")) current_state |= state.cobbler;
                             myHand.AddRange(myDuration);
                             myDuration.Clear();
-                            current_state |= state.turn_start;
                         }
                         break;
                     case "リアクションした。":
@@ -647,6 +718,12 @@ namespace WindowsFormsApp1
                         if (cards[0] == "馬商人") current_state |= state.hand_to_duration;
                         if (cards[0] == "愚者の黄金") current_state |= state.getting_on_deck;
                         if (cards[0] == "移動遊園地") current_state |= state.discard_to_deck;
+                        if (cards[0] == "忠犬")
+                        {
+                            myHand.AddRange(cards);
+                            Remove(ref myDiscard, cards, "捨て札に忠犬がありません");
+                        }
+                        if (cards[0] == "追跡者") current_state |= state.discard_to_deck;
                         break;
                     case "公開した。":
                         if (current_state.HasFlag(state.open_to_draw))
@@ -663,8 +740,26 @@ namespace WindowsFormsApp1
                     case "戻した。":
                         if (cards.Contains("陣地") && destination == "陣地の山")
                             Remove(ref myDuration, cards, "戻すカードが脇にありません。");
+                        else if (current_state.HasFlag(state.afterGet))
+                        {
+                            if (cards[0] == gotCards[0])
+                            {
+                                Remove(ref myDiscard, cards, "戻すカードが捨て札にありません。");
+                                current_state ^= state.afterGet;
+                            }
+                        }
                         else
                             Remove(ref myHand, cards, "戻すカードが手札にありません。");
+                        break;
+                    case "受けた。":
+                        if (cards[0] == "月の恵み") current_state |= state.discard_to_deck;
+                        if (cards[0] == "太陽の恵み") current_state |= state.look_to_draw;
+                        if (cards[0] == "凶兆") current_state |= state.discard_to_deck;
+                        if (cards[0] == "飢饉") current_state |= state.open_to_draw;
+                        if (cards[0] == "貪欲") current_state |= state.getting_on_deck;
+                        if (cards[0] == "蝗害") current_state |= state.deck_to_trash;
+                        if (cards[0] == "疫病") current_state |= state.getting_in_hand;
+                        if (cards[0] == "戦争") current_state |= state.open_to_draw;
                         break;
                 }
             }

@@ -94,7 +94,7 @@
             this.groupBox1.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
             this.groupBox1.Location = new System.Drawing.Point(405, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(266, 496);
+            this.groupBox1.Size = new System.Drawing.Size(383, 496);
             this.groupBox1.TabIndex = 4;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "所持カード";
@@ -103,7 +103,7 @@
             // 
             this.label_name1.AutoSize = true;
             this.label_name1.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.label_name1.Location = new System.Drawing.Point(127, 21);
+            this.label_name1.Location = new System.Drawing.Point(189, 21);
             this.label_name1.Name = "label_name1";
             this.label_name1.Size = new System.Drawing.Size(13, 18);
             this.label_name1.TabIndex = 7;
@@ -123,7 +123,7 @@
             // 
             this.label_ownCard1.AutoSize = true;
             this.label_ownCard1.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.label_ownCard1.Location = new System.Drawing.Point(127, 39);
+            this.label_ownCard1.Location = new System.Drawing.Point(189, 39);
             this.label_ownCard1.Name = "label_ownCard1";
             this.label_ownCard1.Size = new System.Drawing.Size(13, 18);
             this.label_ownCard1.TabIndex = 5;
@@ -134,9 +134,9 @@
             this.groupBox2.Controls.Add(this.label_deck0);
             this.groupBox2.Controls.Add(this.label_name0_deck);
             this.groupBox2.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.groupBox2.Location = new System.Drawing.Point(677, 12);
+            this.groupBox2.Location = new System.Drawing.Point(794, 12);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(145, 496);
+            this.groupBox2.Size = new System.Drawing.Size(204, 496);
             this.groupBox2.TabIndex = 5;
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "山札";
@@ -175,7 +175,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(840, 552);
+            this.ClientSize = new System.Drawing.Size(1010, 552);
             this.Controls.Add(this.label_message);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
