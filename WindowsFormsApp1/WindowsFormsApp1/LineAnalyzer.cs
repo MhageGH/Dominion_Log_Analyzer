@@ -140,9 +140,17 @@ namespace WindowsFormsApp1
 
             // シャッフル無効
             no_shuffle = 1 << 3,
+
+            // 技術革新
+            // 技術革新かつ購入フェイズ中に、「脇に置いた。」捨て札→手札
+            innovation = 1 << 4,
+
+            // 回廊
+            // 回廊かつターン開始時に、open_to_draw状態になる
+            piazza = 1 << 5,
         }
 
-        private void UseCard(string card)
+        private void UseCard(string card, bool me)
         {
             // 山札を捨て札にするカード
             string[] deckToDiscardCards = {
@@ -155,6 +163,7 @@ namespace WindowsFormsApp1
                 "助言者", "熟練工",             // ギルド
                 "公使",                         // プロモ
                 "倒壊", "ウォリアー",           // 冒険
+                "国境警備隊",                   // ルネサンス
             };
 
             // 山札を廃棄するカード
@@ -210,12 +219,12 @@ namespace WindowsFormsApp1
 
             // 持続カード
             string[] durationCards = {
-                "隊商", "漁村", "停泊所", "灯台", "商船", "前哨地", "策士", "船着場",               // 海辺
-                "教会", "船長",                                                                     // プロモ
-                "魔除け", "橋の下のトロル", "隊商の護衛", "地下牢", "道具", "呪いの森", "沼の妖婆", // 冒険
-                "女魔術師",                                                                         // 帝国
-                "カブラー", "悪人のアジト", "ゴーストタウン", "守護者", "夜襲", "秘密の洞窟",       // 夜想曲
-                "幽霊",
+                "隊商", "漁村", "停泊所", "灯台", "商船", "前哨地", "策士", "船着場",                   // 海辺
+                "教会", "船長",                                                                         // プロモ
+                "魔除け", "橋の下のトロル", "隊商の護衛", "地下牢", "道具", "呪いの森", "沼の妖婆",     // 冒険
+                "女魔術師",                                                                             // 帝国
+                "カブラー", "悪人のアジト", "ゴーストタウン", "守護者", "夜襲", "秘密の洞窟", "幽霊",   // 夜想曲
+                "貨物船", "研究",                                                                       // ルネサンス
             };
 
             // 永久持続カード
@@ -247,6 +256,7 @@ namespace WindowsFormsApp1
                 "大衆",                    // 繁栄
                 "浮浪者",                  // 暗黒
                 "ウィル・オ・ウィスプ",    // 夜想曲
+                "易者",                    // ルネサンス
             };
 
             // 公開することが引くことになることで辻褄が合うログを持つカード。
@@ -267,6 +277,7 @@ namespace WindowsFormsApp1
             string[] discardToHandCards = {
                 "会計所",                  // 繁栄
                 "騒がしい村", "開拓者",    // 帝国
+                "山村",                    // ルネサンス
             };
 
             // 隠遁者
@@ -335,34 +346,37 @@ namespace WindowsFormsApp1
                 current_state = state.normal;
             current_state2 ^= state2.duringBuy;
 
-            if (vassalDiscard != null)
+            if (me)
             {
-                if (card.Equals(vassalDiscard))
+                if (vassalDiscard != null)
                 {
-                    myHand.Add(card);
-                    myDiscard.Remove(card);
+                    if (card.Equals(vassalDiscard))
+                    {
+                        myHand.Add(card);
+                        myDiscard.Remove(card);
+                    }
+                    vassalDiscard = null;
                 }
-                vassalDiscard = null;
-            }
-            if (durationCards.Any(card.Equals))
-            {
-                myDuration.Add(card);
-                myHand.Remove(card);
-            }
-            if (permanentDurationCards.Any(card.Equals))
-            {
-                myPermanentDuration.Add(card);
-                myHand.Remove(card);
-            }
-            if (archiveCard.Any(card.Equals))
-            {
-                myArchive.Add(card);
-                myHand.Remove(card);
-            }
-            if (cryptCard.Any(card.Equals))
-            {
-                myCrypt.Add(card);
-                myHand.Remove(card);
+                if (durationCards.Any(card.Equals))
+                {
+                    myDuration.Add(card);
+                    myHand.Remove(card);
+                }
+                if (permanentDurationCards.Any(card.Equals))
+                {
+                    myPermanentDuration.Add(card);
+                    myHand.Remove(card);
+                }
+                if (archiveCard.Any(card.Equals))
+                {
+                    myArchive.Add(card);
+                    myHand.Remove(card);
+                }
+                if (cryptCard.Any(card.Equals))
+                {
+                    myCrypt.Add(card);
+                    myHand.Remove(card);
+                }
             }
         }
 
@@ -463,6 +477,8 @@ namespace WindowsFormsApp1
                         // 捨て札を山札に入れる通常シャッフルは行わない
                         if (cards[0] == "併合") current_state |= state.no_shuffle;   // 獲得時効果
                         if (cards[0] == "寄付") current_state2 |= state2.donate;
+                        if (cards[0] == "技術革新") current_state2 |= state2.innovation;
+                        if (cards[0] == "回廊") current_state2 |= state2.piazza;
                         break;
                     case "購入・獲得した。":
                         current_state = state.normal;
@@ -519,8 +535,8 @@ namespace WindowsFormsApp1
                         break;
                     case "引いた。":
                     case "指定し、的中した。":   // 願いの井戸、秘術師。的中しない場合のテキストは「Tを銅貨を指定したが、香辛料商人が公開された。」のように主語の後が「を」になっていて解析に失敗するが無視しても問題なし。
-                        if (justAfterShuffle && numAtShuffle >= cards.Count)
-                            throw new Exception("山札が残っているのにシャッフルしました。");
+                        //if (justAfterShuffle && numAtShuffle >= cards.Count)
+                        //    throw new Exception("山札が残っているのにシャッフルしました。");  // 「引く」、「見る」以外にも山札を減らすカードはいくつかある
                         justAfterShuffle = false;
                         Remove(ref myDeck, cards, "引くカードが山札にありません。");
                         myHand.AddRange(cards);
@@ -535,8 +551,8 @@ namespace WindowsFormsApp1
                     case "見た。":
                         if (current_state.HasFlag(state.look_to_draw))
                         {
-                            if (justAfterShuffle && numAtShuffle >= cards.Count)
-                                throw new Exception("山札が残っているのにシャッフルしました。");
+                            //if (justAfterShuffle && numAtShuffle >= cards.Count)
+                            //    throw new Exception("山札が残っているのにシャッフルしました。");
                             justAfterShuffle = false;
                             Remove(ref myDeck, cards, "引くカードが山札にありません。");
                             myHand.AddRange(cards);
@@ -614,8 +630,21 @@ namespace WindowsFormsApp1
                         }
                         else if (current_state.HasFlag(state.hand_to_duration) || destination == "脇")
                         {
-                            myDuration.AddRange(cards);
-                            Remove(ref myHand, cards, "置くカードが手札にありません。");
+                            if (inParentheses == "貨物船")
+                            {
+                                myDuration.AddRange(cards);
+                                Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
+                            }
+                            else if (current_state2.HasFlag(state2.innovation))
+                            {
+                                myHand.AddRange(cards);
+                                Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
+                            }
+                            else
+                            {
+                                myDuration.AddRange(cards);
+                                Remove(ref myHand, cards, "置くカードが手札にありません。");
+                            }
                         }
                         else if (current_state.HasFlag(state.native_village))
                         {
@@ -710,6 +739,10 @@ namespace WindowsFormsApp1
                             if (myDuration.Contains("カブラー")) current_state |= state.cobbler;
                             myHand.AddRange(myDuration);
                             myDuration.Clear();
+                            if (current_state2.HasFlag(state2.piazza))
+                            {
+                                current_state |= state.open_to_draw;
+                            }
                         }
                         break;
                     case "リアクションした。":
@@ -767,7 +800,7 @@ namespace WindowsFormsApp1
             {
                 if (action == "渡した。") myHand.AddRange(cards);
             }
-            if (action == "使用した。" || action == "再使用した。" || action == "再々使用した。") UseCard(cards[0]);
+            if (action == "使用した。" || action == "再使用した。" || action == "再々使用した。") UseCard(cards[0], name == myName);
         }
     }
 }

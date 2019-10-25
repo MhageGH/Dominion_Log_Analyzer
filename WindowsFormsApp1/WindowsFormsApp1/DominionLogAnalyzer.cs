@@ -18,9 +18,14 @@ namespace WindowsFormsApp1
             var name = l.Substring(0, idx);
             l = l.Substring(idx + 1);
 
-            // 修飾の削除
-            // l = "停泊所により呪いを脇に置いた。" → l = "呪いを脇に置いた。"
-            l = Regex.Replace(l, @".*により", "");
+            // 「～により」はinParenthesesに入れる。"停泊所により呪いを脇に置いた。"は"呪いを脇に置いた。(停泊所)"とみなす。
+            var match = Regex.Match(l, @".*により").Value;
+            string inParentheses = "";
+            if (match != "")
+            {
+                inParentheses = match.Replace("により", "");
+                l = l.Replace(match, "");
+            }
 
             // リアクションの処理
             // l = "玉璽でリアクションした。" → action = "リアクションした。", cards = {"玉璽"}
@@ -61,7 +66,7 @@ namespace WindowsFormsApp1
             // l = "引いた(隊商)。" → action = "引いた。", inParentheses = "隊商"
             // l = "投機を使用した。 (+$1)" → action = "投機を使用した。", inParentheses = "+$1"
             var action = Regex.Replace(l, @"\(.*\)", "").TrimEnd();
-            var inParentheses = Regex.Replace(Regex.Replace(l, @".*\(", ""), @"\).*", "");
+            if(l.Contains("(")) inParentheses = Regex.Replace(Regex.Replace(l, @".*\(", ""), @"\).*", "");
 
             return (name, action, cards, destination, inParentheses);
         }
