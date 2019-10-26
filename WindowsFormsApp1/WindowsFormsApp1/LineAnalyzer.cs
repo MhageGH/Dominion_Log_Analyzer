@@ -116,6 +116,10 @@ namespace WindowsFormsApp1
             // "納骨堂"使用中
             // myCryptにカードを置く。納骨堂のカードはターン開始時に一部を手札に加える。注意点は資料庫と同じ。
             crypt = 1 << 25,
+
+            // 「戻した。」無効
+            // カササギは「山札の上に置いた。」ではなく「山札に戻した。」というログのため
+            no_return = 1 << 26,
         };
 
         // カードの使用、購入、クリーンアップのいずれかでリセットされないstate
@@ -306,6 +310,11 @@ namespace WindowsFormsApp1
                 "納骨堂", // 夜想曲
             };
 
+            // 戻すことを無効にすることで辻褄が合うログを持つカード
+            string[] noReturnCard = {
+                "カササギ", // 冒険
+            };
+
             current_state = 0;
             if (deckToDiscardCards.Any(card.Equals))
                 current_state |= state.deck_to_discard;
@@ -343,6 +352,8 @@ namespace WindowsFormsApp1
                 current_state |= state.archive;
             if (cryptCard.Any(card.Equals))
                 current_state |= state.crypt;
+            if (noReturnCard.Any(card.Equals))
+                current_state |= state.no_return;
             if (current_state == 0)
                 current_state = state.normal;
             current_state2 ^= state2.duringBuy;
@@ -773,6 +784,8 @@ namespace WindowsFormsApp1
                                 current_state ^= state.afterGet;
                             }
                         }
+                        else if (current_state.HasFlag(state.no_return) && destination == "山札")
+                            break;
                         else
                             Remove(ref myHand, cards, "戻すカードが手札にありません。");
                         break;

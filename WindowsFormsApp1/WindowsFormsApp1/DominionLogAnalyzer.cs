@@ -27,6 +27,14 @@ namespace WindowsFormsApp1
                 l = l.Replace(match, "");
             }
 
+            // Projectのログである「～の効果で」はinParenthesesに入れる。"下水道の効果で銅貨を廃棄した。"は"銅貨を廃棄した。(下水道)"とみなす。
+            match = Regex.Match(l, @".*の効果で").Value;
+            if (match != "")
+            {
+                inParentheses = match.Replace("の効果で", "");
+                l = l.Replace(match, "");
+            }
+
             // リアクションの処理
             // l = "玉璽でリアクションした。" → action = "リアクションした。", cards = {"玉璽"}
             if (l.Contains("リアクションした。"))
