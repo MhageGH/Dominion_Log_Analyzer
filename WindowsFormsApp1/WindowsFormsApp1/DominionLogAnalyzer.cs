@@ -187,13 +187,13 @@ namespace WindowsFormsApp1
             return lines_list.ToArray();
         }
 
-        private void SaveLog(string[] lines)
+        private void SaveLog(string[] lines, string[] shortPlayerNames)
         {
             var extractedLog = new StringBuilder();
             foreach (var line in lines)
             {
                 var (name, action, cards, destination, inParentheses) = Extractor.Extract(line);
-                if (name != null) extractedLog.Append(
+                if (name != null && shortPlayerNames.Any(name.Equals)) extractedLog.Append(
                     "name = " + name 
                     + "\taction = " + action 
                     + "\tcards = " + string.Join(",", cards)
@@ -228,7 +228,7 @@ namespace WindowsFormsApp1
             var shortPlayerNames = GetShortPlayerNames(playerNames);
 
             lines = InsertCleanup(lines);
-            SaveLog(lines);
+            SaveLog(lines, shortPlayerNames);
             ownCards = GetOwnCards(lines, shortPlayerNames);
             var errorLog = new StringBuilder();
             var lineAnalyzer = new LineAnalyzer(shortPlayerNames, myTurnNumber);
