@@ -228,7 +228,7 @@ namespace WindowsFormsApp1
                 "魔除け", "橋の下のトロル", "隊商の護衛", "地下牢", "道具", "呪いの森", "沼の妖婆",     // 冒険
                 "女魔術師",                                                                             // 帝国
                 "カブラー", "悪人のアジト", "ゴーストタウン", "守護者", "夜襲", "秘密の洞窟", "幽霊",   // 夜想曲
-                "貨物船", "研究",                                                                       // ルネサンス
+                "研究",                                                                                 // ルネサンス
             };
 
             // 永久持続カード
@@ -637,6 +637,8 @@ namespace WindowsFormsApp1
                             {
                                 myDuration.AddRange(cards);
                                 Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
+                                myDuration.Add("貨物船");
+                                Remove(ref myHand, new List<string> { "貨物船" }, "貨物船が手札にありません。");    // 貨物船は貨物を入れたときに持続場に入る
                             }
                             else if (inParentheses == "原住民の村")
                             {
