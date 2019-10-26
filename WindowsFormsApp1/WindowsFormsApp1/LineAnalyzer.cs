@@ -252,6 +252,7 @@ namespace WindowsFormsApp1
 
             // 置くことを無効にすることで辻褄が合うログを持つカード。
             string[] noPutCards = {
+                "書庫",                    // 基本
                 "薬師", "念視の泉",        // 錬金術
                 "大衆",                    // 繁栄
                 "浮浪者",                  // 暗黒
@@ -382,8 +383,6 @@ namespace WindowsFormsApp1
 
         // "家臣"によって山札から捨て札にされたカード
         private string vassalDiscard = null;   
-
-        private bool justAfterShuffle = false;
 
         private int numAtShuffle;
 
@@ -519,7 +518,6 @@ namespace WindowsFormsApp1
                     case "シャッフルした。":
                         if (current_state.HasFlag(state.no_shuffle)) break;
                         if (current_state2.HasFlag(state2.no_shuffle)) break;
-                        justAfterShuffle = true;
                         numAtShuffle = myDeck.Count;
                         myDeck.AddRange(myDiscard);
                         myDiscard.Clear();
@@ -535,9 +533,6 @@ namespace WindowsFormsApp1
                         break;
                     case "引いた。":
                     case "指定し、的中した。":   // 願いの井戸、秘術師。的中しない場合のテキストは「Tを銅貨を指定したが、香辛料商人が公開された。」のように主語の後が「を」になっていて解析に失敗するが無視しても問題なし。
-                        //if (justAfterShuffle && numAtShuffle >= cards.Count)
-                        //    throw new Exception("山札が残っているのにシャッフルしました。");  // 「引く」、「見る」以外にも山札を減らすカードはいくつかある
-                        justAfterShuffle = false;
                         Remove(ref myDeck, cards, "引くカードが山札にありません。");
                         myHand.AddRange(cards);
                         if (current_state2.HasFlag(state2.donate))
@@ -551,9 +546,6 @@ namespace WindowsFormsApp1
                     case "見た。":
                         if (current_state.HasFlag(state.look_to_draw))
                         {
-                            //if (justAfterShuffle && numAtShuffle >= cards.Count)
-                            //    throw new Exception("山札が残っているのにシャッフルしました。");
-                            justAfterShuffle = false;
                             Remove(ref myDeck, cards, "引くカードが山札にありません。");
                             myHand.AddRange(cards);
                         }
@@ -635,6 +627,11 @@ namespace WindowsFormsApp1
                                 myDuration.AddRange(cards);
                                 Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
                             }
+                            else if (inParentheses == "原住民の村")
+                            {
+                                myNativeVillage.AddRange(cards);
+                                Remove(ref myDeck, cards, "置くカードが山札にありません。");
+                            }
                             else if (current_state2.HasFlag(state2.innovation))
                             {
                                 myHand.AddRange(cards);
@@ -645,11 +642,6 @@ namespace WindowsFormsApp1
                                 myDuration.AddRange(cards);
                                 Remove(ref myHand, cards, "置くカードが手札にありません。");
                             }
-                        }
-                        else if (current_state.HasFlag(state.native_village))
-                        {
-                            myNativeVillage.AddRange(cards);
-                            Remove(ref myDeck, cards, "置くカードが山札にありません。");
                         }
                         else if (destination == "酒場マット")
                         {
