@@ -120,6 +120,9 @@ namespace WindowsFormsApp1
             // 「戻した。」無効
             // カササギは「山札の上に置いた。」ではなく「山札に戻した。」というログのため
             no_return = 1 << 26,
+
+            // 廃棄無効
+            no_trash = 1 << 27,
         };
 
         // カードの使用、購入、クリーンアップのいずれかでリセットされないstate
@@ -489,6 +492,7 @@ namespace WindowsFormsApp1
                         if (cards[0] == "寄付") current_state2 |= state2.donate;
                         if (cards[0] == "技術革新") current_state2 |= state2.innovation;
                         if (cards[0] == "回廊") current_state2 |= state2.piazza;
+                        if (cards[0] == "大地への塩まき") current_state |= state.no_trash;
                         break;
                     case "購入・獲得した。":
                         current_state = state.normal;
@@ -587,7 +591,10 @@ namespace WindowsFormsApp1
                         }
                         break;
                     case "廃棄した。":
-                        if (cards.Contains("城塞")) current_state |= state.fortress;
+                        if (current_state.HasFlag(state.no_trash))
+                            break;
+                        if (cards.Contains("城塞"))
+                            current_state |= state.fortress;
                         if (current_state.HasFlag(state.deck_to_trash))
                             Remove(ref myDeck, cards, "廃棄するカードが山札にありません。");
                         else if (current_state.HasFlag(state.discard_to_trash))
