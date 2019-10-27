@@ -768,7 +768,7 @@ namespace WindowsFormsApp1
                             myHand.AddRange(cards);
                             Remove(ref myDiscard, cards, "捨て札に忠犬がありません");
                         }
-                        if (cards[0] == "追跡者") current_state |= state.discard_to_deck;
+                        if (cards[0] == "追跡者" && !current_state.HasFlag(state.getting_in_hand)) current_state |= state.discard_to_deck;
                         break;
                     case "公開した。":
                         if (current_state.HasFlag(state.open_to_draw))
