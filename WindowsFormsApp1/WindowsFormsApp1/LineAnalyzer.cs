@@ -106,9 +106,9 @@ namespace WindowsFormsApp1
             // この効果中に"銀貨"を獲得すると、購入フェイズ中であれば山札に、それ以外であれば手札に獲得する。
             stone = 1 << 22,
 
-            // カード獲得後
-            // 取り替え子対応のため。獲得直後に同じカードを戻す場合は取り替え子と判断する
-            afterGet = 1 << 23,
+            // 「戻した。」の実行準備
+            // 取り替え子対応のため。この直後が「取り替え子を受け取った。」であれば、捨て札から戻し、そうでなければ手札から戻す。
+            readyToReturn = 1 << 23,
 
             // カブラー効果中
             cobbler = 1 << 24,
@@ -404,7 +404,7 @@ namespace WindowsFormsApp1
 
         private state2 current_state2 = state2.normal;
 
-        private List<string> gotCards = new List<string>(); // 直前に獲得したカード
+        private string returnedCard;
 
         private List<string> myBar = new List<string>();
 
@@ -471,6 +471,21 @@ namespace WindowsFormsApp1
                 return;
             }
             var (name, action, cards, destination, inParentheses) = Extractor.Extract(line);
+            if (current_state.HasFlag(state.readyToReturn)) //　取り替え子対応のため、「戻した。」は次の行で処理する。
+            {
+                if (name == myName && action == "受け取った。" && cards[0] == "取り替え子")
+                {
+                    myDiscard.Add(cards[0]);
+                    if (myDiscard.Contains(returnedCard)) myDiscard.Remove(returnedCard);
+                    else throw new Exception("戻すカードが捨て札にありません。");
+                }
+                else
+                {
+                    if (myHand.Contains(returnedCard)) myHand.Remove(returnedCard);
+                    else throw new Exception("戻すカードが手札にありません。");
+                }
+                current_state ^= state.readyToReturn;
+            }
             if (name == myName)
             {
                 switch (action)
@@ -505,8 +520,6 @@ namespace WindowsFormsApp1
                         // 捨て札を山札に入れる通常シャッフルは行わない
                         if (cards[0] == "宿屋") current_state |= state.no_shuffle;   // 獲得時効果
                         if (cards[0] == "石") current_state |= state.getting_on_deck;
-                        current_state |= state.afterGet;
-                        gotCards = cards;
                         break;
                     case "受け取った。":
                     case "獲得した。":
@@ -527,8 +540,6 @@ namespace WindowsFormsApp1
                             if (current_state2.HasFlag(state2.duringBuy)) current_state |= state.getting_on_deck;
                             else current_state |= state.getting_in_hand;
                         }
-                        current_state |= state.afterGet;
-                        gotCards = cards;
                         break;
                     case "シャッフルした。":
                         if (current_state.HasFlag(state.no_shuffle)) break;
@@ -785,18 +796,13 @@ namespace WindowsFormsApp1
                     case "戻した。":
                         if (cards.Contains("陣地") && destination == "陣地の山")
                             Remove(ref myDuration, cards, "戻すカードが脇にありません。");
-                        else if (current_state.HasFlag(state.afterGet))
-                        {
-                            if (cards[0] == gotCards[0])
-                            {
-                                Remove(ref myDiscard, cards, "戻すカードが捨て札にありません。");
-                                current_state ^= state.afterGet;
-                            }
-                        }
                         else if (current_state.HasFlag(state.no_return) && destination == "山札")
                             break;
                         else
-                            Remove(ref myHand, cards, "戻すカードが手札にありません。");
+                        {
+                            current_state |= state.readyToReturn;
+                            returnedCard = cards[0];
+                        }
                         break;
                     case "受けた。":
                         if (cards[0] == "月の恵み") current_state |= state.discard_to_deck;
