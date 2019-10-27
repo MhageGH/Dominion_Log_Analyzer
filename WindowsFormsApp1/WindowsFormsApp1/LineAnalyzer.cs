@@ -123,6 +123,9 @@ namespace WindowsFormsApp1
 
             // 廃棄無効
             no_trash = 1 << 27,
+
+            // 他のカードをプレイするカード使用中
+            play_other_card = 1 << 28,
         };
 
         // カードの使用、購入、クリーンアップのいずれかでリセットされないstate
@@ -314,9 +317,67 @@ namespace WindowsFormsApp1
             };
 
             // 戻すことを無効にすることで辻褄が合うログを持つカード
-            string[] noReturnCard = {
+            string[] noReturnCards = {
                 "カササギ", // 冒険
             };
+
+            // 他のカードをプレイするカード
+            string[] playOtherCards =
+            {
+                "はみだし者",        // 暗黒時代
+                "大君主",            // 帝国
+                "ネクロマンサー",    // 夜想曲
+            };
+
+            bool playingOtherCard = (current_state.HasFlag(state.play_other_card))? true : false;
+            if (me)
+            {
+                if (vassalDiscard != null)
+                {
+                    if (card.Equals(vassalDiscard))
+                    {
+                        myHand.Add(card);
+                        myDiscard.Remove(card);
+                    }
+                    vassalDiscard = null;
+                }
+                if (durationCards.Any(card.Equals))
+                {
+                    if (playingOtherCard)
+                    {
+                        myDuration.Add(agency);
+                        myHand.Remove(agency);
+                    }
+                    else
+                    {
+                        myDuration.Add(card);
+                        myHand.Remove(card);
+                    }
+                }
+                if (permanentDurationCards.Any(card.Equals))
+                {
+                    if (playingOtherCard)
+                    {
+                        myPermanentDuration.Add(agency);
+                        myHand.Remove(agency);
+                    }
+                    else
+                    {
+                        myPermanentDuration.Add(card);
+                        myHand.Remove(card);
+                    }
+                }
+                if (archiveCard.Any(card.Equals))
+                {
+                    myArchive.Add(card);
+                    myHand.Remove(card);
+                }
+                if (cryptCard.Any(card.Equals))
+                {
+                    myCrypt.Add(card);
+                    myHand.Remove(card);
+                }
+            }
 
             current_state = 0;
             if (deckToDiscardCards.Any(card.Equals))
@@ -347,52 +408,24 @@ namespace WindowsFormsApp1
                 current_state |= state.open_to_draw;
             if (discardToHandCards.Any(card.Equals))
                 current_state |= state.discard_to_hand;
-            if (hermitCard.Any(card.Equals))
+            if (hermitCard.Any(card.Equals) && me)
                 current_state |= state.hermit;
-            if (heraldCard.Any(card.Equals))
+            if (heraldCard.Any(card.Equals) && me)
                 current_state |= state.herald;
-            if (archiveCard.Any(card.Equals))
+            if (archiveCard.Any(card.Equals) && me)
                 current_state |= state.archive;
-            if (cryptCard.Any(card.Equals))
+            if (cryptCard.Any(card.Equals) && me)
                 current_state |= state.crypt;
-            if (noReturnCard.Any(card.Equals))
+            if (noReturnCards.Any(card.Equals) && me)
                 current_state |= state.no_return;
+            if (playOtherCards.Any(card.Equals) && me)
+            {
+                current_state |= state.play_other_card;
+                agency = card;
+            }
             if (current_state == 0)
                 current_state = state.normal;
             current_state2 ^= state2.duringBuy;
-
-            if (me)
-            {
-                if (vassalDiscard != null)
-                {
-                    if (card.Equals(vassalDiscard))
-                    {
-                        myHand.Add(card);
-                        myDiscard.Remove(card);
-                    }
-                    vassalDiscard = null;
-                }
-                if (durationCards.Any(card.Equals))
-                {
-                    myDuration.Add(card);
-                    myHand.Remove(card);
-                }
-                if (permanentDurationCards.Any(card.Equals))
-                {
-                    myPermanentDuration.Add(card);
-                    myHand.Remove(card);
-                }
-                if (archiveCard.Any(card.Equals))
-                {
-                    myArchive.Add(card);
-                    myHand.Remove(card);
-                }
-                if (cryptCard.Any(card.Equals))
-                {
-                    myCrypt.Add(card);
-                    myHand.Remove(card);
-                }
-            }
         }
 
         // "家臣"によって山札から捨て札にされたカード
@@ -404,7 +437,11 @@ namespace WindowsFormsApp1
 
         private state2 current_state2 = state2.normal;
 
-        private string returnedCard;
+        private string gotCard;         // 直前に獲得したカード(玉璽対応：ログには山札に置いたカードが「カード」としか表示されないため)
+
+        private string returnedCard;    // 戻されるカード(取り替え子対応)
+
+        private string agency;          // 代理アクションカード(大君主など)
 
         private List<string> myBar = new List<string>();
 
@@ -520,6 +557,8 @@ namespace WindowsFormsApp1
                         // 捨て札を山札に入れる通常シャッフルは行わない
                         if (cards[0] == "宿屋") current_state |= state.no_shuffle;   // 獲得時効果
                         if (cards[0] == "石") current_state |= state.getting_on_deck;
+                        if (cards[0] == "ヴィラ") current_state |= state.discard_to_hand;
+                        gotCard = cards[0];
                         break;
                     case "受け取った。":
                     case "獲得した。":
@@ -540,6 +579,8 @@ namespace WindowsFormsApp1
                             if (current_state2.HasFlag(state2.duringBuy)) current_state |= state.getting_on_deck;
                             else current_state |= state.getting_in_hand;
                         }
+                        if (cards[0] == "ヴィラ") current_state |= state.discard_to_hand;
+                        gotCard = cards[0];
                         break;
                     case "シャッフルした。":
                         if (current_state.HasFlag(state.no_shuffle)) break;
@@ -636,6 +677,11 @@ namespace WindowsFormsApp1
                         if (current_state.HasFlag(state.no_put)) break;
                         else if (current_state.HasFlag(state.discard_to_deck) && destination != "捨て札置き場")
                         {
+                            if (cards[0] == "カード")  // 玉璽対応
+                            {
+                                cards.Clear();
+                                cards.Add(gotCard);
+                            }
                             myDeck.AddRange(cards);
                             Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
                         }

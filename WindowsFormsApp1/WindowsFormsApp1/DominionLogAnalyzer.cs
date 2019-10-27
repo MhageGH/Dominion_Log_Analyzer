@@ -193,7 +193,7 @@ namespace WindowsFormsApp1
             foreach (var line in lines)
             {
                 var (name, action, cards, destination, inParentheses) = Extractor.Extract(line);
-                if (name != null && shortPlayerNames.Any(name.Equals)) extractedLog.Append(
+                if (name != null && shortPlayerNames.Any(name.Equals) && action != null) extractedLog.Append(
                     "name = " + name 
                     + "\taction = " + action 
                     + "\tcards = " + string.Join(",", cards)
