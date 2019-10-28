@@ -449,9 +449,9 @@ namespace WindowsFormsApp1
 
         private string gotCard;         // 直前に獲得したカード(玉璽対応：ログには山札に置いたカードが「カード」としか表示されないため)
 
-        private string returnedCard;    // 戻されるカード(取り替え子対応)
-
         private string agency;          // 代理アクションカード(大君主など)
+
+        private List<string> returnedCards;    // 戻されるカード(取り替え子対応)
 
         private List<string> myBar = new List<string>();
 
@@ -523,13 +523,12 @@ namespace WindowsFormsApp1
                 if (name == myName && action == "受け取った。" && cards[0] == "取り替え子")
                 {
                     myDiscard.Add(cards[0]);
-                    if (myDiscard.Contains(returnedCard)) myDiscard.Remove(returnedCard);
+                    if (myDiscard.Contains(returnedCards[0])) myDiscard.Remove(returnedCards[0]);
                     else throw new Exception("戻すカードが捨て札にありません。");
                 }
                 else
                 {
-                    if (myHand.Contains(returnedCard)) myHand.Remove(returnedCard);
-                    else throw new Exception("戻すカードが手札にありません。");
+                    Remove(ref myHand, returnedCards, "戻すカードが手札にありません。");
                 }
                 current_state ^= state.readyToReturn;
             }
@@ -864,7 +863,7 @@ namespace WindowsFormsApp1
                         else
                         {
                             current_state |= state.readyToReturn;
-                            returnedCard = cards[0];
+                            returnedCards = cards;
                         }
                         break;
                     case "受けた。":
