@@ -126,6 +126,10 @@ namespace WindowsFormsApp1
 
             // 他のカードをプレイするカード使用中
             play_other_card = 1 << 28,
+
+            // "研究"使用中
+            // 研究は1以上のコストを持つカードを廃棄して何かを持続場に置いた時点で持続場に入る
+            research = 1 << 29,
         };
 
         // カードの使用、購入、クリーンアップのいずれかでリセットされないstate
@@ -234,7 +238,6 @@ namespace WindowsFormsApp1
                 "魔除け", "橋の下のトロル", "隊商の護衛", "地下牢", "道具", "呪いの森", "沼の妖婆",     // 冒険
                 "女魔術師",                                                                             // 帝国
                 "カブラー", "悪人のアジト", "ゴーストタウン", "守護者", "夜襲", "秘密の洞窟", "幽霊",   // 夜想曲
-                "研究",                                                                                 // ルネサンス
             };
 
             // 永久持続カード
@@ -327,6 +330,11 @@ namespace WindowsFormsApp1
                 "はみだし者",        // 暗黒時代
                 "大君主",            // 帝国
                 "ネクロマンサー",    // 夜想曲
+            };
+
+            // 研究
+            string[] researchCard = {
+                "研究", // ルネサンス
             };
 
             bool playingOtherCard = (current_state.HasFlag(state.play_other_card))? true : false;
@@ -423,6 +431,8 @@ namespace WindowsFormsApp1
                 current_state |= state.play_other_card;
                 agency = card;
             }
+            if (researchCard.Any(card.Equals))
+                current_state |= state.research;
             if (current_state == 0)
                 current_state = state.normal;
             current_state2 ^= state2.duringBuy;
@@ -703,6 +713,13 @@ namespace WindowsFormsApp1
                                 Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
                                 myDuration.Add("貨物船");
                                 Remove(ref myHand, new List<string> { "貨物船" }, "貨物船が手札にありません。");    // 貨物船は貨物を入れたときに持続場に入る
+                            }
+                            if (current_state.HasFlag(state.research))
+                            {
+                                myDuration.AddRange(cards);
+                                Remove(ref myDeck, cards, "置くカードが山札にありません。");
+                                myDuration.Add("研究");
+                                Remove(ref myHand, new List<string> { "研究" }, "研究が手札にありません。");    // 研究は何かを持続場に入れたときにと一緒に持続場に入る
                             }
                             else if (inParentheses == "原住民の村")
                             {
