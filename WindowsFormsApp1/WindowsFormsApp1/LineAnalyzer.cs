@@ -164,10 +164,8 @@ namespace WindowsFormsApp1
             piazza = 1 << 5,
         }
 
-        private void UseCard(string card, bool me)
-        {
-            // 山札を捨て札にするカード
-            string[] deckToDiscardCards = {
+        // 山札を捨て札にするカード
+        string[] deckToDiscardCards = {
                 "山賊",                         // 基本 
                 "海賊船", "海の妖婆",           // 海辺
                 "念視の泉",                     // 錬金術
@@ -180,8 +178,8 @@ namespace WindowsFormsApp1
                 "国境警備隊",                   // ルネサンス
             };
 
-            // 山札を廃棄するカード
-            string[] deckToTrashCards = {
+        // 山札を廃棄するカード
+        string[] deckToTrashCards = {
                 "山賊",            // 基本
                 "詐欺師",          // 陰謀
                 "海賊船",          // 海辺
@@ -189,20 +187,20 @@ namespace WindowsFormsApp1
                 "ゾンビの石工",    // 夜想曲
             };
 
-            // 捨て札を廃棄するカード
-            string[] discardToTrashCards = {
+        // 捨て札を廃棄するカード
+        string[] discardToTrashCards = {
                 "ウォリアー", // 冒険
             };
 
-            // 捨て札から山札の上に札を置くカード
-            string[] discardToDeckCards = { 
+        // 捨て札から山札の上に札を置くカード
+        string[] discardToDeckCards = {
                 "前駆者",       // 基本。
                 "身代わり",     // 陰謀
                 "ゴミあさり",   // 暗黒
             };
 
-            // 手札に獲得するカード
-            string[] gettingInHandCards = { 
+        // 手札に獲得するカード
+        string[] gettingInHandCards = {
                 "職人", "鉱山",     // 基本
                 "拷問人", "交易場", // 陰謀
                 "探検家",           // 海辺
@@ -211,8 +209,8 @@ namespace WindowsFormsApp1
                 "願い",             // 夜想曲
             };
 
-            // 山札の上に獲得するカード
-            string[] gettingOnDeckCards = { 
+        // 山札の上に獲得するカード
+        string[] gettingOnDeckCards = {
                 "役人",                 // 基本
                 "海の妖婆", "宝の地図", // 海辺
                 "金貨袋", "馬上槍試合", // 収穫祭
@@ -222,8 +220,8 @@ namespace WindowsFormsApp1
                 "工匠",                 // 冒険
             };
 
-            // 見ることが引くことになることで辻褄が合うログを持つカード。
-            string[] lookToDrawCards = { 
+        // 見ることが引くことになることで辻褄が合うログを持つカード。
+        string[] lookToDrawCards = {
                 "衛兵",                             // 基本
                 "見張り", "航海士", "真珠採り",     // 海辺
                 "地図職人", "公爵夫人", "よろずや", // 異郷
@@ -231,8 +229,8 @@ namespace WindowsFormsApp1
                 "夜警", "ゾンビの密偵",             // 夜想曲
             };
 
-            // 持続カード
-            string[] durationCards = {
+        // 持続カード
+        string[] durationCards = {
                 "隊商", "漁村", "停泊所", "灯台", "商船", "前哨地", "策士", "船着場",                   // 海辺
                 "教会", "船長",                                                                         // プロモ
                 "魔除け", "橋の下のトロル", "隊商の護衛", "地下牢", "道具", "呪いの森", "沼の妖婆",     // 冒険
@@ -240,32 +238,33 @@ namespace WindowsFormsApp1
                 "カブラー", "悪人のアジト", "ゴーストタウン", "守護者", "夜襲", "秘密の洞窟", "幽霊",   // 夜想曲
             };
 
-            // 永久持続カード
-            string[] permanentDurationCards = {
+        // 永久持続カード
+        string[] permanentDurationCards = {
                 "王子",                 // プロモ
                 "雇人", "チャンピオン", // 冒険
             };
 
-            // 手札を持続場に置くカード
-            string[] asideCards = {
+        // 手札を持続場に置くカード
+        string[] asideCards = {
                 "停泊所",       // 海辺
                 "王子", "教会", // プロモ
                 "道具",         // 冒険
             };
 
-            // 手札を島に置くカード
-            string[] islandCards = {
+        // 手札を島に置くカード
+        string[] islandCards = {
                 "島",    // 海辺
             };
 
-            // 原住民の村マットを使うカード
-            string[] nativeVillageCards = {
+        // 原住民の村マットを使うカード
+        string[] nativeVillageCards = {
                 "原住民の村", // 海辺
             };
 
-            // 置くことを無効にすることで辻褄が合うログを持つカード。
-            string[] noPutCards = {
+        // 置くことを無効にすることで辻褄が合うログを持つカード。
+        string[] noPutCards = {
                 "書庫",                    // 基本
+                "パトロール",              // 陰謀
                 "薬師", "念視の泉",        // 錬金術
                 "大衆",                    // 繁栄
                 "浮浪者",                  // 暗黒
@@ -273,8 +272,8 @@ namespace WindowsFormsApp1
                 "易者",                    // ルネサンス
             };
 
-            // 公開することが引くことになることで辻褄が合うログを持つカード。
-            string[] openToDrawCards = {
+        // 公開することが引くことになることで辻褄が合うログを持つカード。
+        string[] openToDrawCards = {
                 "ゴーレム",       // 錬金術
                 "投機",           // 繁栄
                 "占い師", "収穫", // 収穫祭
@@ -287,56 +286,69 @@ namespace WindowsFormsApp1
                 "幽霊",           // 夜想曲
             };
 
-            // 捨て札を手札に入れるカード
-            string[] discardToHandCards = {
+        // 捨て札を手札に入れるカード
+        string[] discardToHandCards = {
                 "会計所",                  // 繁栄
                 "騒がしい村", "開拓者",    // 帝国
                 "山村",                    // ルネサンス
             };
 
-            // 隠遁者
-            string[] hermitCard = {
+        // 隠遁者
+        string[] hermitCard = {
                 "隠遁者", // 暗黒
             };
 
-            // 伝令官
-            string[] heraldCard = {
+        // 伝令官
+        string[] heraldCard = {
                 "伝令官", //  ギルド
             };
 
-            // 家臣
-            string[] vassalCard = {
+        // 家臣
+        string[] vassalCard = {
                 "家臣", // 基本
             };
 
-            // 資料庫
-            string[] archiveCard = {
+        // 資料庫
+        string[] archiveCard = {
                 "資料庫", // 帝国
             };
 
-            // 納骨堂
-            string[] cryptCard = {
+        // 納骨堂
+        string[] cryptCard = {
                 "納骨堂", // 夜想曲
             };
 
-            // 戻すことを無効にすることで辻褄が合うログを持つカード
-            string[] noReturnCards = {
+        // 戻すことを無効にすることで辻褄が合うログを持つカード
+        string[] noReturnCards = {
                 "カササギ", // 冒険
             };
 
-            // 他のカードをプレイするカード
-            string[] playOtherCards =
-            {
+        // 他のカードをプレイするカード
+        string[] playOtherCards =
+        {
                 "はみだし者",        // 暗黒時代
                 "大君主",            // 帝国
                 "ネクロマンサー",    // 夜想曲
             };
 
-            // 研究
-            string[] researchCard = {
+        // 研究
+        string[] researchCard = {
                 "研究", // ルネサンス
             };
 
+        // 再使用するカード
+        // 持続を再使用すると持続場に行く
+        string[] reuseCards = {
+                "玉座の間",   // 基本
+                "宮廷",       // 繁栄
+                "門下生",     // 冒険
+                "冠",         // 帝国
+                "幽霊",       // 夜想曲
+                "王笏",       // ルネサンス
+            };
+
+        private void UseCard(string card, bool me, bool reuse)
+        {
             bool playingOtherCard = (current_state.HasFlag(state.play_other_card))? true : false;
             if (me)
             {
@@ -355,6 +367,12 @@ namespace WindowsFormsApp1
                     {
                         myDuration.Add(agency);
                         myHand.Remove(agency);
+                    }
+                    else if (reuse && reusing != null)
+                    {
+                        myDuration.Add(reusing);
+                        myHand.Remove(reusing);
+                        reusing = null; // 宮廷対応
                     }
                     else
                     {
@@ -385,6 +403,8 @@ namespace WindowsFormsApp1
                     myCrypt.Add(card);
                     myHand.Remove(card);
                 }
+                if (reuseCards.Any(card.Equals))
+                    reusing = card;
             }
 
             current_state = 0;
@@ -450,6 +470,8 @@ namespace WindowsFormsApp1
         private string gotCard;         // 直前に獲得したカード(玉璽対応：ログには山札に置いたカードが「カード」としか表示されないため)
 
         private string agency;          // 代理アクションカード(大君主など)
+
+        private string reusing;         // 再利用カード
 
         private List<string> returnedCards;    // 戻されるカード(取り替え子対応)
 
@@ -681,6 +703,7 @@ namespace WindowsFormsApp1
                         myHand.AddRange(cards);
                         Remove(ref myBar, cards, "呼び出すカードが酒場にありません。");
                         if (cards.Contains("変容")) current_state |= state.getting_in_hand;
+                        if (cards.Contains("御料車")) reusing = "御料車";
                         break;
                     case "置いた。":
                         if (current_state.HasFlag(state.no_put)) break;
@@ -882,7 +905,8 @@ namespace WindowsFormsApp1
             {
                 if (action == "渡した。") myHand.AddRange(cards);
             }
-            if (action == "使用した。" || action == "再使用した。" || action == "再々使用した。") UseCard(cards[0], name == myName);
+            if (action == "使用した。") UseCard(cards[0], name == myName, false);
+            if (action == "再使用した。" || action == "再々使用した。") UseCard(cards[0], name == myName, true);
         }
     }
 }
