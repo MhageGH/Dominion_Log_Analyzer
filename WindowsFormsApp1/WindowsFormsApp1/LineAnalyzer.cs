@@ -76,8 +76,8 @@ namespace WindowsFormsApp1
             // ターン開始時
             turn_start = 1 << 15,
 
-            // シャッフル無効
-            no_shuffle = 1 << 16,
+            // 使用無効
+            no_use = 1 << 16, 
 
             // "城塞"廃棄中
             fortress = 1 << 17,
@@ -148,8 +148,6 @@ namespace WindowsFormsApp1
 
             // "寄付"購入効果
             // ターン間の「手札に加えた。」は捨て札と山札の両方を手札に引くため、引く前に捨て札全てを山札に置く。
-            // ターン間の廃棄後のログに「シャフルした。」が余分にあるため、寄付後にカードを引いた後、no_shuffle状態にする必要がある。
-            // このno_shuffle状態はクリーンアップでリセットされない。
             donate = 1 << 2,
 
             // シャッフル無効
@@ -347,6 +345,11 @@ namespace WindowsFormsApp1
                 "王笏",       // ルネサンス
             };
 
+        // 廃棄を無効にするカード
+        string[] noTrashCard = {
+                "剣闘士",  // 帝国
+            };
+
         private void UseCard(string card, bool me, bool reuse)
         {
             bool playingOtherCard = (current_state.HasFlag(state.play_other_card))? true : false;
@@ -406,7 +409,6 @@ namespace WindowsFormsApp1
                 if (reuseCards.Any(card.Equals))
                     reusing = card;
             }
-
             current_state = 0;
             if (deckToDiscardCards.Any(card.Equals))
                 current_state |= state.deck_to_discard;
@@ -453,6 +455,8 @@ namespace WindowsFormsApp1
             }
             if (researchCard.Any(card.Equals))
                 current_state |= state.research;
+            if (noTrashCard.Any(card.Equals))
+                current_state |= state.no_trash;
             if (current_state == 0)
                 current_state = state.normal;
             current_state2 ^= state2.duringBuy;
@@ -503,6 +507,8 @@ namespace WindowsFormsApp1
                             "山の恵み", "川の恵み", "海の恵み", "空の恵み", "太陽の恵み", "沼の恵み", "風の恵み" };
 
         static readonly string[] hexes = { "凶兆", "幻惑", "羨望", "飢饉", "恐怖", "貪欲", "憑依", "蝗害", "みじめな生活", "疫病", "貧困", "戦争" };
+
+        static readonly string[] states = { "森の迷子", "錯乱", "嫉妬", "生活苦", "二重苦" };
 
         private void Remove(ref List<string> removed_cards, List<string> cards, string errorMessage)
         {
@@ -568,14 +574,15 @@ namespace WindowsFormsApp1
                         if (cards[0] == "義賊") current_state |= state.open_to_draw;
                         if (cards[0] == "保存") current_state2 |= state2.save;
                         if (cards[0] == "偵察隊") current_state |= state.look_to_draw;
-                        if (cards[0] == "併合") current_state |= state.discard_to_deck;
-                        // 併合は購入時効果で「山札をシャッフルした。」と「〇を山札に混ぜシャッフルした。」の2つのログが現れる
-                        // 捨て札を山札に入れる通常シャッフルは行わない
-                        if (cards[0] == "併合") current_state |= state.no_shuffle;   // 獲得時効果
                         if (cards[0] == "寄付") current_state2 |= state2.donate;
                         if (cards[0] == "技術革新") current_state2 |= state2.innovation;
                         if (cards[0] == "回廊") current_state2 |= state2.piazza;
                         if (cards[0] == "大地への塩まき") current_state |= state.no_trash;
+                        if (cards[0] == "併合")
+                        {
+                            current_state |= state.discard_to_deck;
+                            current_state2 |= state2.no_shuffle;
+                        }
                         break;
                     case "購入・獲得した。":
                         current_state = state.normal;
@@ -584,11 +591,13 @@ namespace WindowsFormsApp1
                         else if (cards[0] == "悪人のアジト" || cards[0] == "ゴーストタウン" || cards[0] == "守護者")
                             myHand.AddRange(cards);
                         else myDiscard.AddRange(cards);
-                        // 宿屋は獲得時効果で「山札をシャッフルした。」と「〇を山札に混ぜシャッフルした。」の2つのログが現れる
-                        // 捨て札を山札に入れる通常シャッフルは行わない
-                        if (cards[0] == "宿屋") current_state |= state.no_shuffle;   // 獲得時効果
                         if (cards[0] == "石") current_state |= state.getting_on_deck;
                         if (cards[0] == "ヴィラ") current_state |= state.discard_to_hand;
+                        if (cards[0] == "宿屋")
+                        {
+                            current_state |= state.discard_to_deck;
+                            current_state2 |= state2.no_shuffle;
+                        }
                         gotCard = cards[0];
                         break;
                     case "受け取った。":
@@ -604,7 +613,11 @@ namespace WindowsFormsApp1
                             myHand.AddRange(cards);
                         else
                             myDiscard.AddRange(cards);
-                        if (cards[0] == "宿屋") current_state |= state.no_shuffle;
+                        if (cards[0] == "宿屋")
+                        {
+                            current_state |= state.discard_to_deck;
+                            current_state2 |= state2.no_shuffle;
+                        }
                         if (cards[0] == "石")
                         {
                             if (current_state2.HasFlag(state2.duringBuy)) current_state |= state.getting_on_deck;
@@ -614,19 +627,19 @@ namespace WindowsFormsApp1
                         gotCard = cards[0];
                         break;
                     case "シャッフルした。":
-                        if (current_state.HasFlag(state.no_shuffle)) break;
                         if (current_state2.HasFlag(state2.no_shuffle)) break;
                         numAtShuffle = myDeck.Count;
                         myDeck.AddRange(myDiscard);
                         myDiscard.Clear();
                         break;
+                    // 「〇を山札に混ぜシャッフルした。」は、直前に「山札をシャッフルした。」というログが現れるがこれは無視する。
                     case "混ぜシャッフルした。":  // 宿屋, 併合, 寄付
-                        if (destination == "山札")
-                        {
-                            myDeck.AddRange(cards);
+                        if (destination != "山札") throw new Exception("混ぜシャッフル失敗");
+                        myDeck.AddRange(cards);
+                        if (current_state.HasFlag(state.discard_to_deck))
                             Remove(ref myDiscard, cards, "混ぜるカードが捨て札にありません。");
-                        }
-                        current_state ^= state.no_shuffle;
+                        else
+                            Remove(ref myHand, cards, "混ぜるカードが手札にありません。");
                         current_state2 ^= state2.no_shuffle;
                         break;
                     case "引いた。":
@@ -879,6 +892,8 @@ namespace WindowsFormsApp1
                         }
                         break;
                     case "戻した。":
+                        if (states.Any(cards[0].Equals)) break;
+                        if (cards[0].Contains("トークン")) break;
                         if (cards.Contains("陣地") && destination == "陣地の山")
                             Remove(ref myDuration, cards, "戻すカードが脇にありません。");
                         else if (current_state.HasFlag(state.no_return) && destination == "山札")
@@ -893,19 +908,29 @@ namespace WindowsFormsApp1
                         if (cards[0] == "月の恵み") current_state |= state.discard_to_deck;
                         if (cards[0] == "太陽の恵み") current_state |= state.look_to_draw;
                         if (cards[0] == "凶兆") current_state |= state.discard_to_deck;
-                        if (cards[0] == "飢饉") current_state |= state.open_to_draw;
                         if (cards[0] == "貪欲") current_state |= state.getting_on_deck;
                         if (cards[0] == "蝗害") current_state |= state.deck_to_trash;
                         if (cards[0] == "疫病") current_state |= state.getting_in_hand;
                         if (cards[0] == "戦争") current_state |= state.open_to_draw;
+                        if (cards[0] == "飢饉")
+                        {
+                            current_state |= state.open_to_draw;
+                            current_state2 |= state2.no_shuffle;
+                        }
                         break;
                 }
             }
             else if (name == opponentName)
             {
                 if (action == "渡した。") myHand.AddRange(cards);
+                // 相手の隊商の護衛によるリアクションのカード使用でstateがリセットされないようにする
+                if (action == "リアクションした。" && cards[0] == "隊商の護衛") current_state |= state.no_use;    
             }
-            if (action == "使用した。") UseCard(cards[0], name == myName, false);
+            if (action == "使用した。")
+            {
+                if (current_state.HasFlag(state.no_use)) current_state ^= state.no_use;
+                else UseCard(cards[0], name == myName, false);
+            }
             if (action == "再使用した。" || action == "再々使用した。") UseCard(cards[0], name == myName, true);
         }
     }
