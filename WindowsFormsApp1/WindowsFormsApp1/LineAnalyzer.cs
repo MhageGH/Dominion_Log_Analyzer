@@ -138,6 +138,10 @@ namespace WindowsFormsApp1
             // "飢饉"使用中
             // 山札の上から3枚を公開後、「混ぜシャフル」ログ問題対応のためにno_shuffleにする
             famine = 1L << 31,
+
+            // "秘密の洞窟"使用中
+            // 手札を3枚捨て札にした時点で持続場に入る
+            secretCave = 1L << 32,
         };
 
         // カードの使用、購入、クリーンアップのいずれかでリセットされないstate
@@ -241,7 +245,7 @@ namespace WindowsFormsApp1
                 "教会", "船長",                                                                         // プロモ
                 "魔除け", "橋の下のトロル", "隊商の護衛", "地下牢", "道具", "呪いの森", "沼の妖婆",     // 冒険
                 "女魔術師",                                                                             // 帝国
-                "カブラー", "悪人のアジト", "ゴーストタウン", "守護者", "夜襲", "秘密の洞窟", "幽霊",   // 夜想曲
+                "カブラー", "悪人のアジト", "ゴーストタウン", "守護者", "夜襲", "幽霊",   // 夜想曲
             };
 
         // 永久持続カード
@@ -359,8 +363,13 @@ namespace WindowsFormsApp1
             };
 
         // 聖なる木立ち
-        private readonly string[] sacredGrove = {
+        private readonly string[] sacredGroveCard = {
                 "聖なる木立ち", // 夜想曲
+            };
+
+        // 秘密の洞窟
+        private readonly string[] secretCaveCard = {
+                "秘密の洞窟",
             };
 
         private void UseCard(string card, bool me, bool reuse)
@@ -470,7 +479,9 @@ namespace WindowsFormsApp1
                 current_state |= state.research;
             if (noTrashCard.Any(card.Equals))
                 current_state |= state.no_trash;
-            if (!me && sacredGrove.Any(card.Equals))
+            if (secretCaveCard.Any(card.Equals))
+                current_state |= state.secretCave;
+            if (!me && sacredGroveCard.Any(card.Equals))
                 current_state |= state.sacredGrove;
             if (current_state == 0)
                 current_state = state.normal;
@@ -699,6 +710,11 @@ namespace WindowsFormsApp1
                         {
                             myDiscard.AddRange(cards);
                             Remove(ref myHand, cards, "捨てるカードが手札にありません。");
+                            if (current_state.HasFlag(state.secretCave) && cards.Count == 3)
+                            {
+                                myDuration.Add("秘密の洞窟");
+                                myHand.Remove("秘密の洞窟");
+                            }
                         }
                         break;
                     case "廃棄した。":
