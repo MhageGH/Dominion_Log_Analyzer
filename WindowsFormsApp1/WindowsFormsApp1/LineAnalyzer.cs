@@ -11,7 +11,7 @@ namespace WindowsFormsApp1
         // normal以外のstateは併用できる。stateで記述していないactionはnormalの挙動が適用される。
         // (購入時も続くstateの有無を確認)
         [Flags]
-        private enum state
+        private enum state : UInt64
         {
             // 「獲得した。」「購入・獲得した。」「受け取った。」サプライ→捨て札
             // 「引いた。」、「指定し、的中した。」山札→手札
@@ -27,72 +27,72 @@ namespace WindowsFormsApp1
             // 「手札に加えた。」山札→手札
             // 「山札に加えた。」手札→山札
             // 「見た。」「公開した。」移動なし
-            normal = 1 << 0,
+            normal = 1L << 0,
 
             // 「捨て札にした。」山札→捨て札
-            deck_to_discard = 1 << 1,
+            deck_to_discard = 1L << 1,
 
             // 「廃棄した。」山札→廃棄置き場
-            deck_to_trash = 1 << 2,
+            deck_to_trash = 1L << 2,
 
             // 「置いた。」捨て札→山札
-            discard_to_deck = 1 << 3,
+            discard_to_deck = 1L << 3,
 
             // 「獲得した。」サプライ→手札
-            getting_in_hand = 1 << 4,
+            getting_in_hand = 1L << 4,
 
             // 「獲得した。」サプライ→山札
-            getting_on_deck = 1 << 5,
+            getting_on_deck = 1L << 5,
 
             // 「見た。」山札→手札
-            look_to_draw = 1 << 6,
+            look_to_draw = 1L << 6,
 
             // "家臣"使用中。
             //「捨て札にした。」で山札を捨て札にした後、捨て札にしたカードと同名のカードを使用した場合は、捨て札にしたカードを手札に戻す。
             // (捨て札にしたカードを使用せずに手札から同名のカードを使用した場合はログから判別できない。)
-            vassal = 1 << 7,
+            vassal = 1L << 7,
 
             // 「置いた。」手札→持続場
-            hand_to_duration = 1 << 8,
+            hand_to_duration = 1L << 8,
 
             // 「置いた。」手札→島
-            hand_to_island = 1 << 9,
+            hand_to_island = 1L << 9,
 
             // 「置いた。」山札→原住民の村マット、「手札に加えた。」原住民の村マット→手札
-            native_village = 1 << 10,
+            native_village = 1L << 10,
 
             // 「置いた。」無効
-            no_put = 1 << 11,
+            no_put = 1L << 11,
 
             // 「公開した。」山札→手札
-            open_to_draw = 1 << 12,
+            open_to_draw = 1L << 12,
 
             // 「手札に加えた。」捨て札→手札
-            discard_to_hand = 1 << 13,
+            discard_to_hand = 1L << 13,
 
             // 「廃棄した。」捨て札→廃棄置き場
-            discard_to_trash = 1 << 14,
+            discard_to_trash = 1L << 14,
 
             // ターン開始時
-            turn_start = 1 << 15,
+            turn_start = 1L << 15,
 
             // 使用無効
-            no_use = 1 << 16, 
+            no_use = 1L << 16, 
 
             // "城塞"廃棄中
-            fortress = 1 << 17,
+            fortress = 1L << 17,
 
             // "隠遁者"使用中
             // 手札にあれば手札から廃棄し、手札になければ捨て札から廃棄する。
             // 手札にあるが捨て札から廃棄した場合はログから判別できない。
-            hermit = 1 << 18,
+            hermit = 1L << 18,
 
             // "伝令官"使用中
             // 「公開した。」カードがアクションカードであれば、山札→手札
-            herald = 1 << 19,
+            herald = 1L << 19,
 
             // 購入フェイズ終了後
-            afterBuy = 1 << 20,
+            afterBuy = 1L << 20,
 
             // "資料庫"使用中
             // myArchiveにカードを置く。資料庫のカードはターン開始時に一部を手札に加える。
@@ -100,40 +100,44 @@ namespace WindowsFormsApp1
             // myArchiveは共通。"資料庫"を複数使用した場合、myArchiveが全て空になるまで"資料庫"は戻らない。
             // 本来は使用した"資料庫"ごとに個別にmyArchiveが用意される。しかしどのmyArchiveから取り出したかはログから判別出来ないため共通としている。
             // このため複数の資料庫を使用中にシャフルが入ると、山札のカウントが実際と食い違うことがある。
-            archive = 1 << 21,
+            archive = 1L << 21,
 
             // "石"の獲得・廃棄時効果中
             // この効果中に"銀貨"を獲得すると、購入フェイズ中であれば山札に、それ以外であれば手札に獲得する。
-            stone = 1 << 22,
+            stone = 1L << 22,
 
             // 「戻した。」の実行準備
             // 取り替え子対応のため。この直後が「取り替え子を受け取った。」であれば、捨て札から戻し、そうでなければ手札から戻す。
-            readyToReturn = 1 << 23,
+            readyToReturn = 1L << 23,
 
             // カブラー効果中
-            cobbler = 1 << 24,
+            cobbler = 1L << 24,
 
             // "納骨堂"使用中
             // myCryptにカードを置く。納骨堂のカードはターン開始時に一部を手札に加える。注意点は資料庫と同じ。
-            crypt = 1 << 25,
+            crypt = 1L << 25,
 
             // 「戻した。」無効
             // カササギは「山札の上に置いた。」ではなく「山札に戻した。」というログのため
-            no_return = 1 << 26,
+            no_return = 1L << 26,
 
             // 廃棄無効
-            no_trash = 1 << 27,
+            no_trash = 1L << 27,
 
             // 他のカードをプレイするカード使用中
-            play_other_card = 1 << 28,
+            play_other_card = 1L << 28,
 
             // "研究"使用中
             // 研究は1以上のコストを持つカードを廃棄して何かを持続場に置いた時点で持続場に入る
-            research = 1 << 29,
+            research = 1L << 29,
 
             // 相手による"聖なる木立ち"使用中
             // 相手の祝福効果を得る
-            sacredGrove = 1 << 30,
+            sacredGrove = 1L << 30,
+
+            // "飢饉"使用中
+            // 山札の上から3枚を公開後、「混ぜシャフル」ログ問題対応のためにno_shuffleにする
+            famine = 1L << 31,
         };
 
         // カードの使用、購入、クリーンアップのいずれかでリセットされないstate
@@ -167,7 +171,7 @@ namespace WindowsFormsApp1
         }
 
         // 山札を捨て札にするカード
-        string[] deckToDiscardCards = {
+        private readonly string[] deckToDiscardCards = {
                 "山賊",                         // 基本 
                 "海賊船", "海の妖婆",           // 海辺
                 "念視の泉",                     // 錬金術
@@ -181,7 +185,7 @@ namespace WindowsFormsApp1
             };
 
         // 山札を廃棄するカード
-        string[] deckToTrashCards = {
+        private readonly string[] deckToTrashCards = {
                 "山賊",            // 基本
                 "詐欺師",          // 陰謀
                 "海賊船",          // 海辺
@@ -190,19 +194,19 @@ namespace WindowsFormsApp1
             };
 
         // 捨て札を廃棄するカード
-        string[] discardToTrashCards = {
+        private readonly string[] discardToTrashCards = {
                 "ウォリアー", // 冒険
             };
 
         // 捨て札から山札の上に札を置くカード
-        string[] discardToDeckCards = {
+        private readonly string[] discardToDeckCards = {
                 "前駆者",       // 基本。
                 "身代わり",     // 陰謀
                 "ゴミあさり",   // 暗黒
             };
 
         // 手札に獲得するカード
-        string[] gettingInHandCards = {
+        private readonly string[] gettingInHandCards = {
                 "職人", "鉱山",     // 基本
                 "拷問人", "交易場", // 陰謀
                 "探検家",           // 海辺
@@ -212,7 +216,7 @@ namespace WindowsFormsApp1
             };
 
         // 山札の上に獲得するカード
-        string[] gettingOnDeckCards = {
+        private readonly string[] gettingOnDeckCards = {
                 "役人",                 // 基本
                 "海の妖婆", "宝の地図", // 海辺
                 "金貨袋", "馬上槍試合", // 収穫祭
@@ -223,7 +227,7 @@ namespace WindowsFormsApp1
             };
 
         // 見ることが引くことになることで辻褄が合うログを持つカード。
-        string[] lookToDrawCards = {
+        private readonly string[] lookToDrawCards = {
                 "衛兵",                             // 基本
                 "見張り", "航海士", "真珠採り",     // 海辺
                 "地図職人", "公爵夫人", "よろずや", // 異郷
@@ -232,7 +236,7 @@ namespace WindowsFormsApp1
             };
 
         // 持続カード
-        string[] durationCards = {
+        private readonly string[] durationCards = {
                 "隊商", "漁村", "停泊所", "灯台", "商船", "前哨地", "策士", "船着場",                   // 海辺
                 "教会", "船長",                                                                         // プロモ
                 "魔除け", "橋の下のトロル", "隊商の護衛", "地下牢", "道具", "呪いの森", "沼の妖婆",     // 冒険
@@ -241,30 +245,30 @@ namespace WindowsFormsApp1
             };
 
         // 永久持続カード
-        string[] permanentDurationCards = {
+        private readonly string[] permanentDurationCards = {
                 "王子",                 // プロモ
                 "雇人", "チャンピオン", // 冒険
             };
 
         // 手札を持続場に置くカード
-        string[] asideCards = {
+        private readonly string[] asideCards = {
                 "停泊所",       // 海辺
                 "王子", "教会", // プロモ
                 "道具",         // 冒険
             };
 
         // 手札を島に置くカード
-        string[] islandCards = {
+        private readonly string[] islandCards = {
                 "島",    // 海辺
             };
 
         // 原住民の村マットを使うカード
-        string[] nativeVillageCards = {
+        private readonly string[] nativeVillageCards = {
                 "原住民の村", // 海辺
             };
 
         // 置くことを無効にすることで辻褄が合うログを持つカード。
-        string[] noPutCards = {
+        private readonly string[] noPutCards = {
                 "書庫",                    // 基本
                 "パトロール",              // 陰謀
                 "薬師", "念視の泉",        // 錬金術
@@ -275,7 +279,7 @@ namespace WindowsFormsApp1
             };
 
         // 公開することが引くことになることで辻褄が合うログを持つカード。
-        string[] openToDrawCards = {
+        private readonly string[] openToDrawCards = {
                 "ゴーレム",       // 錬金術
                 "投機",           // 繁栄
                 "占い師", "収穫", // 収穫祭
@@ -289,44 +293,44 @@ namespace WindowsFormsApp1
             };
 
         // 捨て札を手札に入れるカード
-        string[] discardToHandCards = {
+        private readonly string[] discardToHandCards = {
                 "会計所",                  // 繁栄
                 "騒がしい村", "開拓者",    // 帝国
                 "山村",                    // ルネサンス
             };
 
         // 隠遁者
-        string[] hermitCard = {
+        private readonly string[] hermitCard = {
                 "隠遁者", // 暗黒
             };
 
         // 伝令官
-        string[] heraldCard = {
+        private readonly string[] heraldCard = {
                 "伝令官", //  ギルド
             };
 
         // 家臣
-        string[] vassalCard = {
+        private readonly string[] vassalCard = {
                 "家臣", // 基本
             };
 
         // 資料庫
-        string[] archiveCard = {
+        private readonly string[] archiveCard = {
                 "資料庫", // 帝国
             };
 
         // 納骨堂
-        string[] cryptCard = {
+        private readonly string[] cryptCard = {
                 "納骨堂", // 夜想曲
             };
 
         // 戻すことを無効にすることで辻褄が合うログを持つカード
-        string[] noReturnCards = {
+        private readonly string[] noReturnCards = {
                 "カササギ", // 冒険
             };
 
         // 他のカードをプレイするカード
-        string[] playOtherCards =
+        private readonly string[] playOtherCards =
         {
                 "はみだし者",        // 暗黒時代
                 "大君主",            // 帝国
@@ -334,13 +338,13 @@ namespace WindowsFormsApp1
             };
 
         // 研究
-        string[] researchCard = {
+        private readonly string[] researchCard = {
                 "研究", // ルネサンス
             };
 
         // 再使用するカード
         // 持続を再使用すると持続場に行く
-        string[] reuseCards = {
+        private readonly string[] reuseCards = {
                 "玉座の間",   // 基本
                 "宮廷",       // 繁栄
                 "門下生",     // 冒険
@@ -350,12 +354,12 @@ namespace WindowsFormsApp1
             };
 
         // 廃棄を無効にするカード
-        string[] noTrashCard = {
+        private readonly string[] noTrashCard = {
                 "剣闘士",  // 帝国
             };
 
         // 聖なる木立ち
-        string[] sacredGrove = {
+        private readonly string[] sacredGrove = {
                 "聖なる木立ち", // 夜想曲
             };
 
@@ -644,7 +648,7 @@ namespace WindowsFormsApp1
                         myDiscard.Clear();
                         break;
                     // 「〇を山札に混ぜシャッフルした。」は、直前に「山札をシャッフルした。」というログが現れるがこれは無視する。
-                    case "混ぜシャッフルした。":  // 宿屋, 併合, 寄付
+                    case "混ぜシャッフルした。":
                         if (destination != "山札") throw new Exception("混ぜシャッフル失敗");
                         myDeck.AddRange(cards);
                         if (current_state.HasFlag(state.discard_to_deck))
@@ -761,7 +765,7 @@ namespace WindowsFormsApp1
                                 myDuration.Add("貨物船");
                                 Remove(ref myHand, new List<string> { "貨物船" }, "貨物船が手札にありません。");    // 貨物船は貨物を入れたときに持続場に入る
                             }
-                            if (current_state.HasFlag(state.research))
+                            else if (current_state.HasFlag(state.research))
                             {
                                 myDuration.AddRange(cards);
                                 Remove(ref myDeck, cards, "置くカードが山札にありません。");
@@ -894,10 +898,12 @@ namespace WindowsFormsApp1
                     case "公開した。":
                         if (current_state.HasFlag(state.open_to_draw))
                         {
+                            if (current_state.HasFlag(state.famine))
+                                current_state2 |= state2.no_shuffle;
                             myHand.AddRange(cards);
                             Remove(ref myDeck, cards, "引くカードが山札にありません。");
                         }
-                        if (current_state.HasFlag(state.herald) && CardList.actionCards.Any(cards[0].Equals))
+                        else if (current_state.HasFlag(state.herald) && CardList.actionCards.Any(cards[0].Equals))
                         {
                             myHand.AddRange(cards);
                             Remove(ref myDeck, cards, "引くカードが山札にありません。");
@@ -927,7 +933,7 @@ namespace WindowsFormsApp1
                         if (cards[0] == "飢饉")
                         {
                             current_state |= state.open_to_draw;
-                            current_state2 |= state2.no_shuffle;
+                            current_state |= state.famine;
                         }
                         break;
                 }
