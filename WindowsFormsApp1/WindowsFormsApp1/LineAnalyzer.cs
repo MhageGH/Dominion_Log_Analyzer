@@ -722,7 +722,7 @@ namespace WindowsFormsApp1
                         if (current_state.HasFlag(state.no_put)) break;
                         else if (current_state.HasFlag(state.discard_to_deck) && destination != "捨て札置き場")
                         {
-                            if (cards[0] == "カード")  // 玉璽対応
+                            if (cards.Any() && cards[0] == "カード")  // 玉璽対応
                             {
                                 cards.Clear();
                                 cards.Add(gotCard);
@@ -782,7 +782,7 @@ namespace WindowsFormsApp1
                             myDeck.AddRange(cards);
                             Remove(ref myHand, cards, "置くカードが手札にありません。");
                         }
-                        if (cards[0] == "山札" && destination == "捨て札置き場")
+                        if (cards.Any() && cards[0] == "山札" && destination == "捨て札置き場")
                         {
                             myDiscard.AddRange(myDeck);
                             myDeck.Clear();
