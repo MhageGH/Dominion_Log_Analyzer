@@ -4,6 +4,26 @@ using System.Linq;
 
 namespace WindowsFormsApp1
 {
+    // 女魔術師対応
+    class PreviousMyCards
+    {
+        public List<string> myBar;
+
+        public List<string> myDuration;
+
+        public List<string> myPermanentDuration;
+
+        public List<string> myArchive;
+
+        public List<string> myCrypt;
+
+        public List<string> myDiscard;
+
+        public List<string> myHand;
+
+        public List<string> myDeck;
+    }
+
     class LineAnalyzer
     {
         // action時のカードの移動元と移動先はstateによって変わる。手札と場の札は区別しない。
@@ -374,6 +394,15 @@ namespace WindowsFormsApp1
 
         private void UseCard(string card, bool me, bool reuse)
         {
+            previousMyCards.myArchive = new List<string>(myArchive);
+            previousMyCards.myBar= new List<string>(myBar);
+            previousMyCards.myCrypt = new List<string>(myCrypt);
+            previousMyCards.myDeck = new List<string>(myDeck);
+            previousMyCards.myDiscard = new List<string>(myDiscard);
+            previousMyCards.myDuration = new List<string>(myDuration);
+            previousMyCards.myHand = new List<string>(myHand);
+            previousMyCards.myPermanentDuration = new List<string>(myPermanentDuration);
+
             bool playingOtherCard = (current_state.HasFlag(state.play_other_card))? true : false;
             if (me)
             {
@@ -523,11 +552,13 @@ namespace WindowsFormsApp1
 
         private List<string> myHand = new List<string>();
 
+        private List<string> myDeck = new List<string>();
+
+        private PreviousMyCards previousMyCards = new PreviousMyCards();
+
         private string[] shortPlayerNames;
 
         private int myTurnNumber;
-
-        private List<string> myDeck = new List<string>();
 
         static readonly string[] boons = { "大地の恵み", "田畑の恵み", "炎の恵み", "森の恵み", "月の恵み",
                             "山の恵み", "川の恵み", "海の恵み", "空の恵み", "太陽の恵み", "沼の恵み", "風の恵み" };
@@ -569,6 +600,19 @@ namespace WindowsFormsApp1
             {
                 myHand.Add("前哨地");
                 Remove(ref myDuration, new List<string> { "前哨地" }, "持続場に前哨地がありません");
+                return;
+            }
+            if (line.Contains("女魔術師により") && line.Contains("無効化された。"))
+            {
+                current_state = state.normal;
+                myArchive = new List<string>(previousMyCards.myArchive);
+                myBar = new List<string>(previousMyCards.myBar);
+                myCrypt = new List<string>(previousMyCards.myCrypt);
+                myDeck = new List<string>(previousMyCards.myDeck);
+                myDiscard = new List<string>(previousMyCards.myDiscard);
+                myDuration = new List<string>(previousMyCards.myDuration);
+                myHand = new List<string>(previousMyCards.myHand);
+                myPermanentDuration = new List<string>(previousMyCards.myPermanentDuration);
                 return;
             }
             var (name, action, cards, destination, inParentheses) = Extractor.Extract(line);
