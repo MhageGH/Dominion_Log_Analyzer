@@ -166,7 +166,7 @@ namespace WindowsFormsApp1
 
         // カードの使用、購入、クリーンアップのいずれかでリセットされないstate
         [Flags]
-        private enum state2
+        private enum nonVolatileState
         {
             normal = 0,
 
@@ -514,7 +514,7 @@ namespace WindowsFormsApp1
                 current_state |= state.sacredGrove;
             if (current_state == 0)
                 current_state = state.normal;
-            current_state2 ^= state2.duringBuy;
+            current_nonVolatileState ^= nonVolatileState.duringBuy;
         }
 
         // "家臣"によって山札から捨て札にされたカード
@@ -524,7 +524,7 @@ namespace WindowsFormsApp1
 
         private state current_state = state.normal;
 
-        private state2 current_state2 = state2.normal;
+        private nonVolatileState current_nonVolatileState = nonVolatileState.normal;
 
         private string gotCard;         // 直前に獲得したカード(玉璽対応：ログには山札に置いたカードが「カード」としか表示されないため)
 
@@ -636,27 +636,27 @@ namespace WindowsFormsApp1
                 {
                     case "購入した。":   // 購入するが獲得しない。獲得ログはこの後発生する。
                         current_state = state.normal;
-                        current_state2 |= state2.duringBuy;
+                        current_nonVolatileState |= nonVolatileState.duringBuy;
                         // 伝令官の購入時効果：2019年10月20日現在、この効果で山札に行くカード名が匿名の「カード」となる不具合があるため正常動作しない。
                         if (cards[0] == "伝令官") current_state |= state.discard_to_deck;
                         if (cards[0] == "医者") current_state |= state.look_to_draw;
                         if (cards[0] == "召喚") current_state |= state.getting_in_hand;
                         if (cards[0] == "義賊") current_state |= state.open_to_draw;
-                        if (cards[0] == "保存") current_state2 |= state2.save;
+                        if (cards[0] == "保存") current_nonVolatileState |= nonVolatileState.save;
                         if (cards[0] == "偵察隊") current_state |= state.look_to_draw;
-                        if (cards[0] == "寄付") current_state2 |= state2.donate;
-                        if (cards[0] == "技術革新") current_state2 |= state2.innovation;
-                        if (cards[0] == "回廊") current_state2 |= state2.piazza;
+                        if (cards[0] == "寄付") current_nonVolatileState |= nonVolatileState.donate;
+                        if (cards[0] == "技術革新") current_nonVolatileState |= nonVolatileState.innovation;
+                        if (cards[0] == "回廊") current_nonVolatileState |= nonVolatileState.piazza;
                         if (cards[0] == "大地への塩まき") current_state |= state.no_trash;
                         if (cards[0] == "併合")
                         {
                             current_state |= state.discard_to_deck;
-                            current_state2 |= state2.no_shuffle;
+                            current_nonVolatileState |= nonVolatileState.no_shuffle;
                         }
                         break;
                     case "購入・獲得した。":
                         current_state = state.normal;
-                        current_state2 |= state2.duringBuy;
+                        current_nonVolatileState |= nonVolatileState.duringBuy;
                         if (cards[0] == "遊牧民の野営地") myDeck.AddRange(cards);
                         else if (cards[0] == "悪人のアジト" || cards[0] == "ゴーストタウン" || cards[0] == "守護者")
                             myHand.AddRange(cards);
@@ -666,7 +666,7 @@ namespace WindowsFormsApp1
                         if (cards[0] == "宿屋")
                         {
                             current_state |= state.discard_to_deck;
-                            current_state2 |= state2.no_shuffle;
+                            current_nonVolatileState |= nonVolatileState.no_shuffle;
                         }
                         gotCard = cards[0];
                         break;
@@ -686,18 +686,18 @@ namespace WindowsFormsApp1
                         if (cards[0] == "宿屋")
                         {
                             current_state |= state.discard_to_deck;
-                            current_state2 |= state2.no_shuffle;
+                            current_nonVolatileState |= nonVolatileState.no_shuffle;
                         }
                         if (cards[0] == "石")
                         {
-                            if (current_state2.HasFlag(state2.duringBuy)) current_state |= state.getting_on_deck;
+                            if (current_nonVolatileState.HasFlag(nonVolatileState.duringBuy)) current_state |= state.getting_on_deck;
                             else current_state |= state.getting_in_hand;
                         }
                         if (cards[0] == "ヴィラ") current_state |= state.discard_to_hand;
                         gotCard = cards[0];
                         break;
                     case "シャッフルした。":
-                        if (current_state2.HasFlag(state2.no_shuffle)) break;
+                        if (current_nonVolatileState.HasFlag(nonVolatileState.no_shuffle)) break;
                         numAtShuffle = myDeck.Count;
                         myDeck.AddRange(myDiscard);
                         myDiscard.Clear();
@@ -708,20 +708,24 @@ namespace WindowsFormsApp1
                         myDeck.AddRange(cards);
                         if (current_state.HasFlag(state.discard_to_deck))
                             Remove(ref myDiscard, cards, "混ぜるカードが捨て札にありません。");
+                        else if (current_nonVolatileState.HasFlag(nonVolatileState.donate))
+                        {
+                            Remove(ref myDiscard, cards, "混ぜるカードが捨て札にありません。");
+                            current_nonVolatileState ^= nonVolatileState.donate;
+                        }
                         else
                             Remove(ref myHand, cards, "混ぜるカードが手札にありません。");
-                        current_state2 ^= state2.no_shuffle;
+                        current_nonVolatileState ^= nonVolatileState.no_shuffle;
                         break;
                     case "引いた。":
                     case "指定し、的中した。":   // 願いの井戸、秘術師。的中しない場合のテキストは「Tを銅貨を指定したが、香辛料商人が公開された。」のように主語の後が「を」になっていて解析に失敗するが無視しても問題なし。
                         Remove(ref myDeck, cards, "引くカードが山札にありません。");
                         myHand.AddRange(cards);
-                        if (current_state2.HasFlag(state2.donate))
+                        if (current_nonVolatileState.HasFlag(nonVolatileState.donate))
                         {
                             myDeck.AddRange(myDiscard);
                             myDiscard.Clear();
-                            current_state2 |= state2.no_shuffle;
-                            current_state2 ^= state2.donate;
+                            current_nonVolatileState |= nonVolatileState.no_shuffle;
                         }
                         break;
                     case "見た。":
@@ -735,7 +739,7 @@ namespace WindowsFormsApp1
                         myDiscard.AddRange(myHand);
                         myHand.Clear();
                         current_state = state.normal;
-                        current_state2 ^= state2.duringBuy;
+                        current_nonVolatileState ^= nonVolatileState.duringBuy;
                         break;
                     case "捨て札にした。":
                         if (boons.Any(cards[0].Equals) || hexes.Any(cards[0].Equals)) break;
@@ -779,7 +783,7 @@ namespace WindowsFormsApp1
                             Remove(ref myHand, cards, "廃棄するカードが手札にありません。");
                         if (cards.Contains("石"))
                         {
-                            if (current_state2.HasFlag(state2.duringBuy)) current_state |= state.getting_on_deck;
+                            if (current_nonVolatileState.HasFlag(nonVolatileState.duringBuy)) current_state |= state.getting_on_deck;
                             else current_state |= state.getting_in_hand;
                         }
                         break;
@@ -837,7 +841,7 @@ namespace WindowsFormsApp1
                                 myNativeVillage.AddRange(cards);
                                 Remove(ref myDeck, cards, "置くカードが山札にありません。");
                             }
-                            else if (current_state2.HasFlag(state2.innovation))
+                            else if (current_nonVolatileState.HasFlag(nonVolatileState.innovation))
                             {
                                 myHand.AddRange(cards);
                                 Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
@@ -908,11 +912,11 @@ namespace WindowsFormsApp1
                                 break;    // ターン開始時に持続カードと同時に手札に加えているので無視する
                             }
                             else if (current_state.HasFlag(state.fortress)) myHand.AddRange(cards); // 城塞を手札に加える
-                            else if (current_state2.HasFlag(state2.save))
+                            else if (current_nonVolatileState.HasFlag(nonVolatileState.save))
                             {
                                 myHand.AddRange(cards);
                                 Remove(ref myDuration, cards, "保存したカードがありません。");
-                                current_state2 ^= state2.save;
+                                current_nonVolatileState ^= nonVolatileState.save;
                             }
                             else if (inParentheses == "ターン終了時" && cards.Contains("忠犬"))
                             {
@@ -936,7 +940,7 @@ namespace WindowsFormsApp1
                             if (myDuration.Contains("カブラー")) current_state |= state.cobbler;
                             myHand.AddRange(myDuration);
                             myDuration.Clear();
-                            if (current_state2.HasFlag(state2.piazza))
+                            if (current_nonVolatileState.HasFlag(nonVolatileState.piazza))
                             {
                                 current_state |= state.open_to_draw;
                             }
@@ -959,7 +963,7 @@ namespace WindowsFormsApp1
                         if (current_state.HasFlag(state.open_to_draw))
                         {
                             if (current_state.HasFlag(state.famine))
-                                current_state2 |= state2.no_shuffle;
+                                current_nonVolatileState |= nonVolatileState.no_shuffle;
                             myHand.AddRange(cards);
                             Remove(ref myDeck, cards, "引くカードが山札にありません。");
                         }
