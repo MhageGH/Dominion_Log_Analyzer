@@ -1,4 +1,4 @@
-# Dominion Log Anlyzer
+# Dominion Log Analyzer
 ドミニオンオンラインのログの解析ツールです。対応は日本語のみです。二人戦のみです。
 ![property](doc/screenshot.png)<br>
 
