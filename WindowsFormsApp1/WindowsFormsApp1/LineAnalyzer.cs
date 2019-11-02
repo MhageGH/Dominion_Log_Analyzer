@@ -130,6 +130,10 @@ namespace WindowsFormsApp1
             // "研究"使用中
             // 研究は1以上のコストを持つカードを廃棄して何かを持続場に置いた時点で持続場に入る
             research = 1 << 29,
+
+            // 相手による"聖なる木立ち"使用中
+            // 相手の祝福効果を得る
+            sacredGrove = 1 << 30,
         };
 
         // カードの使用、購入、クリーンアップのいずれかでリセットされないstate
@@ -350,6 +354,11 @@ namespace WindowsFormsApp1
                 "剣闘士",  // 帝国
             };
 
+        // 聖なる木立ち
+        string[] sacredGrove = {
+                "聖なる木立ち", // 夜想曲
+            };
+
         private void UseCard(string card, bool me, bool reuse)
         {
             bool playingOtherCard = (current_state.HasFlag(state.play_other_card))? true : false;
@@ -457,6 +466,8 @@ namespace WindowsFormsApp1
                 current_state |= state.research;
             if (noTrashCard.Any(card.Equals))
                 current_state |= state.no_trash;
+            if (!me && sacredGrove.Any(card.Equals))
+                current_state |= state.sacredGrove;
             if (current_state == 0)
                 current_state = state.normal;
             current_state2 ^= state2.duringBuy;
@@ -720,6 +731,7 @@ namespace WindowsFormsApp1
                         break;
                     case "置いた。":
                         if (current_state.HasFlag(state.no_put)) break;
+                        else if (cards.Any() && boons.Any(cards[0].Equals)) break;  // 恵みの村対応
                         else if (current_state.HasFlag(state.discard_to_deck) && destination != "捨て札置き場")
                         {
                             if (cards.Any() && cards[0] == "カード")  // 玉璽対応
@@ -924,7 +936,10 @@ namespace WindowsFormsApp1
             {
                 if (action == "渡した。") myHand.AddRange(cards);
                 // 相手の隊商の護衛によるリアクションのカード使用でstateがリセットされないようにする
-                if (action == "リアクションした。" && cards[0] == "隊商の護衛") current_state |= state.no_use;    
+                if (action == "リアクションした。" && cards[0] == "隊商の護衛") current_state |= state.no_use;
+                // 相手の聖なる木立ちは相手が祝福受けるログでこちらが祝福効果を受ける
+                if (current_state.HasFlag(state.sacredGrove) && action == "受けた。" && cards[0] == "月の恵み") current_state |= state.discard_to_deck;
+                if (current_state.HasFlag(state.sacredGrove) && action == "受けた。" && cards[0] == "太陽の恵み") current_state |= state.look_to_draw;
             }
             if (action == "使用した。")
             {
