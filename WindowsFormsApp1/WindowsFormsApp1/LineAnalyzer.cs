@@ -75,9 +75,6 @@ namespace WindowsFormsApp1
             // 「置いた。」手札→持続場
             hand_to_duration = 1L << 8,
 
-            // 「置いた。」手札→島
-            hand_to_island = 1L << 9,
-
             // 「置いた。」山札→原住民の村マット、「手札に加えた。」原住民の村マット→手札
             native_village = 1L << 10,
 
@@ -479,8 +476,6 @@ namespace WindowsFormsApp1
                 current_state |= state.vassal;
             if (asideCards.Any(card.Equals))
                 current_state |= state.hand_to_duration;
-            if (islandCards.Any(card.Equals))
-                current_state |= state.hand_to_island;
             if (nativeVillageCards.Any(card.Equals))
                 current_state |= state.native_village;
             if (noPutCards.Any(card.Equals))
@@ -851,6 +846,11 @@ namespace WindowsFormsApp1
                                 myDuration.AddRange(cards);
                                 Remove(ref myHand, cards, "置くカードが手札にありません。");
                             }
+                        }
+                        else if (destination == "島マット")
+                        {
+                            myIsland.AddRange(cards);
+                            Remove(ref myHand, cards, "置くカードが手札にありません。");
                         }
                         else if (destination == "酒場マット")
                         {
