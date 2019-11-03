@@ -738,7 +738,7 @@ namespace WindowsFormsApp1
                         current_nonVolatileState ^= nonVolatileState.duringBuy;
                         break;
                     case "捨て札にした。":
-                        if (boons.Any(cards[0].Equals) || hexes.Any(cards[0].Equals)) break;
+                        if (cards.Any() && (boons.Any(cards[0].Equals) || hexes.Any(cards[0].Equals))) break;
                         if (current_state.HasFlag(state.deck_to_discard) || current_state.HasFlag(state.vassal))
                         {
                             myDiscard.AddRange(cards);
