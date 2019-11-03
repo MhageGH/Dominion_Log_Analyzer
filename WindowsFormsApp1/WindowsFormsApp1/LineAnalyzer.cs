@@ -261,7 +261,7 @@ namespace WindowsFormsApp1
         private readonly string[] durationCards = {
                 "隊商", "漁村", "停泊所", "灯台", "商船", "前哨地", "策士", "船着場",                   // 海辺
                 "教会", "船長",                                                                         // プロモ
-                "魔除け", "橋の下のトロル", "隊商の護衛", "地下牢", "道具", "呪いの森", "沼の妖婆",     // 冒険
+                "魔除け", "橋の下のトロル", "隊商の護衛", "地下牢", "呪いの森", "沼の妖婆",     // 冒険
                 "女魔術師",                                                                             // 帝国
                 "カブラー", "悪人のアジト", "ゴーストタウン", "守護者", "夜襲", "幽霊",   // 夜想曲
             };
@@ -824,6 +824,13 @@ namespace WindowsFormsApp1
                                 Remove(ref myDiscard, cards, "置くカードが捨て札にありません。");
                                 myDuration.Add("貨物船");
                                 Remove(ref myHand, new List<string> { "貨物船" }, "貨物船が手札にありません。");    // 貨物船は貨物を入れたときに持続場に入る
+                            }
+                            else if (inParentheses == "道具")
+                            {
+                                myDuration.AddRange(cards);
+                                Remove(ref myHand, cards, "置くカードが手札にありません。");
+                                myDuration.Add("道具");
+                                Remove(ref myHand, new List<string> { "道具" }, "道具が手札にありません。");    // 道具は1枚以上のカードを持続場に入れたときに持続場に入る
                             }
                             else if (current_state.HasFlag(state.research))
                             {
