@@ -205,6 +205,8 @@ namespace WindowsFormsApp1
             using (var sw = new System.IO.StreamWriter("game_log.txt")) sw.Write(string.Join(Environment.NewLine, lines));
         }
 
+        public string errorLog;
+
         /// <summary>プレイヤーのフルネーム</summary>
         public string[] playerNames;
 
@@ -228,7 +230,9 @@ namespace WindowsFormsApp1
             var shortPlayerNames = GetShortPlayerNames(playerNames);
 
             lines = InsertCleanup(lines);
+#if DEBUG
             SaveLog(lines, shortPlayerNames);
+#endif
             ownCards = GetOwnCards(lines, shortPlayerNames);
             var errorLog = new StringBuilder();
             var lineAnalyzer = new LineAnalyzer(shortPlayerNames, myTurnNumber);
@@ -244,7 +248,10 @@ namespace WindowsFormsApp1
                 }
             }
             myDeck = lineAnalyzer.GetMyDeck();
+#if DEBUG
             using (var sw = new System.IO.StreamWriter("error_log.txt")) sw.Write(errorLog);
+#endif
+            this.errorLog = errorLog.ToString();
             return errorLog.Length == 0 ? true : false;
         }
     }

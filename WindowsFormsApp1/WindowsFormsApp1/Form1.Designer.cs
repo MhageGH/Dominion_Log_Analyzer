@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             this.textBox_log = new System.Windows.Forms.TextBox();
             this.button_analyze = new System.Windows.Forms.Button();
             this.label1 = new System.Windows.Forms.Label();
@@ -40,6 +41,9 @@
             this.label_deck0 = new System.Windows.Forms.Label();
             this.label_name0_deck = new System.Windows.Forms.Label();
             this.label_message = new System.Windows.Forms.Label();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
+            this.button_OutputError = new System.Windows.Forms.Button();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.groupBox1.SuspendLayout();
             this.groupBox2.SuspendLayout();
             this.SuspendLayout();
@@ -47,11 +51,11 @@
             // textBox_log
             // 
             this.textBox_log.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.textBox_log.Location = new System.Drawing.Point(12, 30);
+            this.textBox_log.Location = new System.Drawing.Point(12, 72);
             this.textBox_log.Multiline = true;
             this.textBox_log.Name = "textBox_log";
             this.textBox_log.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.textBox_log.Size = new System.Drawing.Size(387, 478);
+            this.textBox_log.Size = new System.Drawing.Size(387, 436);
             this.textBox_log.TabIndex = 0;
             // 
             // button_analyze
@@ -69,7 +73,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
-            this.label1.Location = new System.Drawing.Point(12, 9);
+            this.label1.Location = new System.Drawing.Point(12, 51);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(140, 18);
             this.label1.TabIndex = 2;
@@ -171,11 +175,42 @@
             this.label_message.TabIndex = 6;
             this.label_message.Text = "-";
             // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.checkBox1.Location = new System.Drawing.Point(15, 12);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(272, 22);
+            this.checkBox1.TabIndex = 7;
+            this.checkBox1.Text = "自動更新 (FirefoxでDominion Onlineを起動)";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            this.checkBox1.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
+            // 
+            // button_OutputError
+            // 
+            this.button_OutputError.Enabled = false;
+            this.button_OutputError.Font = new System.Drawing.Font("メイリオ", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.button_OutputError.Location = new System.Drawing.Point(895, 514);
+            this.button_OutputError.Name = "button_OutputError";
+            this.button_OutputError.Size = new System.Drawing.Size(103, 23);
+            this.button_OutputError.TabIndex = 8;
+            this.button_OutputError.Text = "エラーを出力";
+            this.button_OutputError.UseVisualStyleBackColor = true;
+            this.button_OutputError.Click += new System.EventHandler(this.button_OutputError_Click);
+            // 
+            // timer1
+            // 
+            this.timer1.Interval = 5000;
+            this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1010, 552);
+            this.Controls.Add(this.button_OutputError);
+            this.Controls.Add(this.checkBox1);
             this.Controls.Add(this.label_message);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);
@@ -207,6 +242,9 @@
         private System.Windows.Forms.Label label_name0;
         private System.Windows.Forms.Label label_deck0;
         private System.Windows.Forms.Label label_message;
+        private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.Button button_OutputError;
+        private System.Windows.Forms.Timer timer1;
     }
 }
 
