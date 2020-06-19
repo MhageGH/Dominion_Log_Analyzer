@@ -1,3 +1,5 @@
+Dominion Onlineのバージョンアップによりログが大きく変わってしまったため、現在は対応していません。
+
 # Dominion Log Analyzer
 ドミニオンオンラインのログの解析ツールです。対応は日本語のみです。二人戦のみです。
 ![property](doc/screenshot.png)<br>
